@@ -180,8 +180,22 @@ int state_playing_channel(State state) {
 	// Το κανάλι στο οποίο παίζει "live" ο χρήστης είναι το κανάλι του clip στο
 	// οποίο δείχνει το recording_index.
 
-	// Προς υλοποίηση
-	return 0;
+	// Διάσχηση όλων των clips μορφής vector που περιέχουν το channel κάθε clip
+	for (VectorNode node = vector_first(state->clips);
+		node != VECTOR_EOF;
+		node = vector_next(state->clips, node)) {
+
+		Clip clip = vector_node_value(state->clips, node); // Παίρνω το κάθε clip ξεχωριστά
+		
+		state->recording_index = (uint)clip->channel; // Παίρνω από το καθένα μόνο το channel του και το εισάγω στο recording_index
+	}
+
+	uint live_channel_playing = state->recording_index; // Πέρνω το channel από το recording_index
+		
+	int int_live_channel_playing = (int)live_channel_playing; // Kάνω direference το channel για να μπορώ να το επιστρέψω
+	
+	return int_live_channel_playing;
+	
 }
 
 double state_measure_duration(State state) {
