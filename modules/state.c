@@ -204,8 +204,10 @@ double state_measure_duration(State state) {
 }
 
 double state_total_duration(State state) {
-	// Προς υλοποίηση
-	return 0.0;
+	// Παίρνω και επιστρέφω τον συνολικό χρόνο του τραγουδιού από το midi_file
+	MidiFile midi = state->midi_file;
+	double total_duration = midi->duration; 
+	return total_duration;
 }
 
 List state_displayed_notes(State state, double time_window) {
