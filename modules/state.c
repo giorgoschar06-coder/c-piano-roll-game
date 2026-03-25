@@ -211,8 +211,34 @@ double state_total_duration(State state) {
 }
 
 List state_displayed_notes(State state, double time_window) {
-	// Προς υλοποίηση
-	return NULL;
+	double time_now = state->info.time; // Χρόνος που έχω τώρα
+	double time_at_end = time_now + time_window; // Χρόνος που θα έχω στο τέλος
+	
+	List displayed_notes = list_create(NULL); // Δημιουργία λίστας για να εισαχθούν οι νότες σε αύξουσα σειρά
+	
+	List list = state->midi_file->events; // Ανοίγω την λίστα που βρίσκονται όλα τα events για να έχω πρόσβαση στα MIDI_NOTES
+	
+	int channel_playing_now = state_playing_channel(state); // Παίνω το κανάλι που βρίσκομαι τώρα για έλεγχο ορθότητας αργότερα
+	
+	for (ListNode node = list_first(list); // Διαπερνώ την λίστα με όλα τα events για να πάρω όλα τα MIDI_NOTES και να τα
+		node != LIST_EOF;				   // εισάγω ταξινομημένα στην δικιά μου λίστα
+		node = list_next(list, node)) {
+
+		MidiEvent event = list_node_value(list, node);
+
+		if (event->time <= time_at_end) { // Έλεγχος για να μην ξεπεράσω το χρονικό όριο του time_window
+			// Όλοι οι απαραίτητοι ελέγχοι για εγκυρότητα των στοιχείων των events + νοτών και εισαγωγή νοτών στην λίστα σε αύξουσα σειρά με βάση τον χρόνο (event->time >= time_now)
+			if (event->time >= time_now && event->channel == channel_playing_now && event->type == MIDI_NOTE) {
+				if((uint8_t)event->key >= 0 && (uint8_t)event->key <= 127 && (uint8_t)event->velocity >= 0) {
+					list_insert_next(displayed_notes, list_last(displayed_notes), event); // Για να μπουν όλες οι νότες στην σωστή σειρά (ταξινομημένες) προσθέτω πάντα από το τέλος
+				}
+			}
+		}
+		else
+		break;
+	}
+
+	return displayed_notes; // Επιστροφή ολοκληρωμένης λίστας
 }
 
 List state_playback_events(State state, double since) {
