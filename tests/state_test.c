@@ -62,7 +62,7 @@ void test_displayed_notes_function() {
 	List test_list_small_time_window = state_displayed_notes(state, 4.0); 
 	List test_list_big_time_window = state_displayed_notes(state, 19.0); 
 
-	// Έλεγχος ότι οι λίστες έχουν δημιουργηθεί σωστά χωρίς να είναι κενές αφού πρέπει να περιέχουν νότες
+	// Έλεγχος ότι οι λίστες έχουν δημιουργηθεί σωστά 
 	TEST_ASSERT(test_list_small_time_window != NULL);
 	TEST_ASSERT(test_list_big_time_window != NULL);
 
@@ -99,6 +99,62 @@ void test_displayed_notes_function() {
 	state_destroy(state);
 }
 
+void test_playback_events_function() {
+	State state = state_create("test.mid"); // Δημιουργία λίστας για έλεγχο
+	TEST_ASSERT(state != NULL); // Έλεγχος ότι η λίστα δεν είναι άδεια
+	
+	// Υποχρεωτικός ορισμός ενός key με empty_key_state για την χρήση του state_update
+	struct key_state key = empty_key_state(); 
+	
+	// Υποχρεωτική χρήση του state_update για να ανανεωθεί ο χρόνος του κομματιού σε επιθυμιτό χρόνο έτσι ώστε να μπορούν να γίνουν οι απαραίτητοι ελέγχοι
+	state_update(state, &key, 18.987);
+
+	// Παραδείγματα λιστών, ένα με μικρό since, ένα με μεγάλο και ένα που ξεπερνά το duration του τραγουδιού και βγαίνει αρνητικό το since
+	List test_list_small_since = state_playback_events(state, 2.0); 
+	List test_list_big_since = state_playback_events(state, 18.0); 
+	List test_list_off_since = state_playback_events(state, 20.0);
+
+	// Έλεγχος ότι οι λίστες έχουν δημιουργηθεί σωστά
+	TEST_ASSERT(test_list_small_since != NULL);
+	TEST_ASSERT(test_list_big_since != NULL);
+	TEST_ASSERT(test_list_off_since != NULL);
+
+	// Παίρνω τα μεγέθοι των λιστών δηλαδή τον αριθμών των events που περαστήκαν
+	int list_size_small = list_size(test_list_small_since);
+	int list_size_big = list_size(test_list_big_since);
+	int list_size_off = list_size(test_list_off_since);
+
+	TEST_ASSERT( list_size_small >= 0); // Ελέγχω ότι είναι μέσα στα όρια (μπορεί να είναι 0 εαν δεν υπήρχαν events εως τα 2sec)
+	TEST_ASSERT( list_size_small <= list_size_big && list_size_big != 0); // Συγκρίνω τα μεγέθοι μεταξύ τους και ελέγχω ότι έχει περαστεί τουλάχιστον ένα event
+	TEST_ASSERT( list_size_off >= 0); 
+
+	// Στον πάρακατω έλεγχο, διασχώ όλα τα στοιχεία της μεγάλης λίστας και τα ελέγχω/συγκρίνω εαν είναι όλα ταξινομημένα σωστά σε μη φθίνουσα σειρά με βάση τον χρόνο
+	List list = test_list_big_since;
+
+	for (ListNode node = list_first(list);
+		node != LIST_EOF;
+		node = list_next(list, node)) {
+
+			if (node != list_last(list)) { // Σταματώ στον τελευτέο κόμβο για να μην ξεπεράσω το όριο της λίστας
+			MidiEvent list_node_value_1 = list_node_value(list, node);
+
+			ListNode list_node_2 = list_next(list, node);
+			MidiEvent list_node_value_2 = list_node_value(list, list_node_2);
+
+			TEST_ASSERT(list_node_value_1->time <= list_node_value_2->time);
+			}
+			else
+			break;
+		}
+	
+	// Καταστρέφω τις λίστες για να αποφύγω τυχόν memory leaks
+	list_destroy(test_list_small_since);
+	list_destroy(test_list_big_since);
+	list_destroy(test_list_off_since);
+
+	state_destroy(state);
+}
+
 void test_state_update() {
 	State state = state_create("test.mid");
 	TEST_ASSERT(state != NULL);
@@ -120,6 +176,7 @@ TEST_LIST = {
 	{ "test_state_basic_functions", test_state_basic_functions },
 	{ "test_state_update", test_state_update },
 	{ "test_displayed_notes_function", test_displayed_notes_function },
+	{ "test_playback_events_function", test_playback_events_function },
 
 	{ NULL, NULL } // τερματίζουμε τη λίστα με NULL
 };
