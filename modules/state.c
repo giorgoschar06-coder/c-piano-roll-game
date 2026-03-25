@@ -213,6 +213,9 @@ double state_total_duration(State state) {
 List state_displayed_notes(State state, double time_window) {
 	double time_now = state->info.time; // Χρόνος που έχω τώρα
 	double time_at_end = time_now + time_window; // Χρόνος που θα έχω στο τέλος
+	if (time_at_end > state_total_duration(state)) { // Απλός έλεγχος για μικρή βελτιστοποίηση προγράμματος
+		time_at_end = state_total_duration(state);
+	}
 	
 	List displayed_notes = list_create(NULL); // Δημιουργία λίστας για να εισαχθούν οι νότες σε αύξουσα σειρά
 	
@@ -242,12 +245,37 @@ List state_displayed_notes(State state, double time_window) {
 }
 
 List state_playback_events(State state, double since) {
-	// Προς υλοποίηση
-	return NULL;
+	double time_now = state->info.time; // Χρόνος που έχω τώρα
+	double time_since = time_now - since; // Χρόνος πριν since δευτερόλεπτα
+	if (time_since <= 0) { // Εαν πάρω αρνητικό time_since, το μηδενίζω για να πάρω τα events σπό την αρχή του κομματιού
+		time_since = 0;
+	}
+
+	List playback_events = list_create(NULL); // Δημιουργία λίστας για να μπουν τα events ταξινομημένα 
+
+	List list = state->midi_file->events; // Δημιουργία λίστας με όλα τα events του τραγουδιού
+
+	for (ListNode node = list_first(list); // Διάσχηση όλων των events της λίστας για να κρατήσω αυτά που συμβαδίζουν με τα χρονικά μου πλαίσια
+		 node != LIST_EOF;
+		 node = list_next(list, node)) {
+
+			MidiEvent event = list_node_value(list, node);
+
+			// Εαν το event είναι μεταξύ του χρόνου since και του χρόνου τώρα, το εισάγω στην λίστα σε μη φθίνουσα σειρά με βάση τον χρόνο
+			if (event->time >= time_since && event->time <= time_now) {
+				list_insert_next(playback_events, list_last(playback_events), event);
+			}
+			else if (event->time > time_now) { // Εαν ο χρόνος βγει εκτός ορίων, τερματίζω την διάσχηση
+				break;
+			}
+		 }
+
+	return playback_events; // Επιστροφή ολοκληρομένης λίστας
 }
 
 void state_update(State state, KeyState ks, double elapsed_time) {
-	// Προς υλοποίηση
+	// ΠΡΟΣΟΡΙΝΗ γραμμή κώδικα για την υλοποίηση των tests του state_playback events  
+	state->info.time = state->info.time + elapsed_time; 
 }
 
 void state_destroy(State state) {
