@@ -158,17 +158,8 @@ State state_create(String midi_file) {
 }
 
 StateInfo state_info(State state) {
-	// Κάνω direference τα δεδομένα (πληροφορίες) του state σε τύπο state_info για να μπορώ να τα επιστρέψω
-	StateInfo state_info_state = malloc(sizeof(struct state_info));
-
-	state_info_state->paused = state->info.paused;
-	state_info_state->game_over = state->info.game_over;
-	state_info_state->accuracy = state->info.accuracy;
-	state_info_state->score = state->info.score;
-	state_info_state->time = state->info.time;
-	state_info_state->level = state->info.level;
-
-	return state_info_state;
+	// Στέλνω τις πληροφορίες (info) με την διεύθυνση μνήμης του state->info για να συμβαδίζει με τον τύπο του StateInfo που ανήκει στο state
+	return &state->info;
 }
 
 int state_playing_channel(State state) {
