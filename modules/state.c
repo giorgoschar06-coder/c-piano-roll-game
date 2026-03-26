@@ -279,52 +279,54 @@ void state_update(State state, KeyState ks, double elapsed_time) {
 		state->info.time = state->info.time + elapsed_time;
 	}
 
-	Vector all_clips = state->clips;
+	Vector all_clips = state->clips; // Vector για να έχω πρόσβαση σε όλα τα clips
 
-	int clip_playing_now = (int)state->recording_index;
+	int clip_playing_now = (int)state->recording_index; // Αριθμός του clip που παίζει τώρα
 	
-	int all_clips_number = vector_size(all_clips);
+	int all_clips_number = vector_size(all_clips); // Αριθμός των συνολικών clips
 
-	if (clip_playing_now < all_clips_number) {
-		Clip clip = vector_get_at(all_clips, clip_playing_now);
+	if (clip_playing_now < all_clips_number) { // Έλεγχος για να μην ξεπεράσω τα συνολικά clips του τραγουδιού
+		Clip clip = vector_get_at(all_clips, clip_playing_now); // Εισαγωγή στο clip που βρίσκετε το κομμάτι
 	
-		int channel_playing_now = state_playing_channel(state);
+		int channel_playing_now = state_playing_channel(state); // Το channel στο οποίο βρίσκετε το κομμάτι
 			
-			if (clip->channel == channel_playing_now 
+			if (clip->channel == channel_playing_now  //Έλεγχος ότι ο χρόνος που βρίσκετε το κομμάτι τώρα είναι μεταξύ του χρόνου του clip που έχω
 				&& state->info.time >= clip->start
 				&& state->info.time <= (clip->start + clip->duration)) {
 
-					for (int k = 0 ; k < 128 ; k++) {
+					for (int k = 0 ; k < 128 ; k++) { // Πέρασμα από όλα τις νότε - πλήκτρα του πιάνου
+						 // Έλεγχος εαν τα πλήκτρα έχουν πατηθεί, για να δημιουργήσω τα δικά μου keys με βάση αυτές τις νότες έτσι ώστε να τις προσθέσω στο τέλος του clip->recorded
+						 // Με λίγα λόγια γίνετε η ηχογράφηση των νοτών του κομματιού για το συγκεκριμένο clip
 						if (ks->changed_keys[k] >= 0) {
 							MidiEvent key_pressed = malloc(sizeof(struct midi_event));
 
 							key_pressed->time = state->info.time;
 							key_pressed->channel = channel_playing_now;
-							key_pressed->key = k;
+							key_pressed->key = k; // Η θέση του k αντιπροσωπεύει την νότα (0-127) που έχει παιχτεί
 							key_pressed->velocity = (uint8_t)ks->active_keys[k];
 
 							list_insert_next(clip->recorded, list_last(clip->recorded), key_pressed);
 						}
 					}	
 			}
-			else if (state->info.time > (clip->start + clip->duration)
+			else if (state->info.time > (clip->start + clip->duration) // Έλεγχος εαν ο χρόνος που βρίσκετε το κομμάτι ξεπέρασε τον χρόνο που παιζόταν το clip
 					 && clip->channel == channel_playing_now) {
 					
+					// Ξανά μια πλήρης διάσχηση από όλες τις νότες για να εντοπίσω τις νότες που έχουν παιχτεί και είναι ενεργές,
+					// και να τις απενεργοποιήσω δημιουργόντας για αυτές ένα αντίγραφο key χωρίς ήχο και να τες προσθέτω στο τέλος του clip->recorded
 					for (int k = 0 ; k < 128 ; k++) {
-						if (ks->active_keys[k] > 0) {
+						if (ks->active_keys[k] > 0) { // Έλεγχος εαν έχουν παιχτεί κατά την διάρκει του recording
 							MidiEvent key_mute = malloc(sizeof(struct midi_event));
 
 							key_mute->time = state->info.time;
 							key_mute->channel = channel_playing_now;
 							key_mute->key = k;
-							key_mute->velocity = 0;
+							key_mute->velocity = 0; // Μηδενίζω τον ήχο τους δηλαδή τις απενεργοποιώ
 
 							list_insert_next(clip->recorded, list_last(clip->recorded), key_mute);
 						}
 					}
-
-					state->recording_index++;
-									
+					state->recording_index++; // Αφού η ηχογράφηση ολοκληρώνετε με επιτυχία, αυξάνω το index για να προχωρίσω στο επόμενο event		
 			}
 	}
 }
