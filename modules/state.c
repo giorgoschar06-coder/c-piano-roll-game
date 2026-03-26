@@ -281,48 +281,52 @@ void state_update(State state, KeyState ks, double elapsed_time) {
 
 	Vector all_clips = state->clips;
 
-	int channel_playing_now = state_playing_channel(state);
+	int clip_playing_now = (int)state->recording_index;
+	
+	int all_clips_number = vector_size(all_clips);
 
-	for (VectorNode node = vector_first(all_clips);
-		 node != VECTOR_EOF;
-		 node = vector_next(all_clips, node)) {
-
-			Clip clip = vector_node_value(all_clips, node);
+	if (clip_playing_now < all_clips_number) {
+		Clip clip = vector_get_at(all_clips, clip_playing_now);
+	
+		int channel_playing_now = state_playing_channel(state);
 			
 			if (clip->channel == channel_playing_now 
-				&& clip->start >= state->info.time
+				&& state->info.time >= clip->start
 				&& state->info.time <= (clip->start + clip->duration)) {
 
-					list_insert_next(clip->recorded, list_last(clip->recorded), ks->changed_keys);
+					for (int k = 0 ; k < 128 ; k++) {
+						if (ks->changed_keys[k] >= 0) {
+							MidiEvent key_pressed = malloc(sizeof(struct midi_event));
+
+							key_pressed->time = state->info.time;
+							key_pressed->channel = channel_playing_now;
+							key_pressed->key = k;
+							key_pressed->velocity = (uint8_t)ks->active_keys[k];
+
+							list_insert_next(clip->recorded, list_last(clip->recorded), key_pressed);
+						}
+					}	
 			}
 			else if (state->info.time > (clip->start + clip->duration)
 					 && clip->channel == channel_playing_now) {
 					
-					List list = state->midi_events;
+					for (int k = 0 ; k < 128 ; k++) {
+						if (ks->active_keys[k] > 0) {
+							MidiEvent key_mute = malloc(sizeof(struct midi_event));
 
-					for (ListNode node = list_first(list);
-						 node != LIST_EOF;
-						 node = list_next(list, node)) {
+							key_mute->time = state->info.time;
+							key_mute->channel = channel_playing_now;
+							key_mute->key = k;
+							key_mute->velocity = 0;
 
-							MidiEvent event = list_node_value(list, node);
-
-							if (event->time >= clip->start
-								&& clip->channel == channel_playing_now
-								&& event->time <= (clip->start + clip->duration)) {
-
-								event->velocity = 0;
-							}
-						 }
-
-				    if (vector_next(all_clips, node) != VECTOR_EOF) {
-						state->recording_index++;
+							list_insert_next(clip->recorded, list_last(clip->recorded), key_mute);
+						}
 					}
-						 
-					break;
+
+					state->recording_index++;
+									
 			}
-
-		 }
-
+	}
 }
 
 void state_destroy(State state) {
