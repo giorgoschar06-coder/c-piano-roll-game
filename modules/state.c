@@ -265,8 +265,64 @@ List state_playback_events(State state, double since) {
 }
 
 void state_update(State state, KeyState ks, double elapsed_time) {
-	// ΠΡΟΣΟΡΙΝΗ γραμμή κώδικα για την υλοποίηση των tests του state_playback events  
-	state->info.time = state->info.time + elapsed_time; 
+	if (ks->space == true){ // Εαν το space πατηθεί μια φορά, το παιχνίδι γίνετε paused (γίνετε unpaused όταν ξαναπατηθεί)
+		state->info.paused = !state->info.paused; // Η αλλαγή κατάστασης του paused είναι σε μορφή μοχλού με βάση το not
+		if (state->info.game_over == true) { // Εαν το παιχνίδι είναι σε game over, τότε το φεύγει από αυτή την καρτάσταση
+			state->info.game_over = false;
+		}
+	}
+	if (ks->n == true && state->info.paused == true && state->info.game_over == false) { // Εαν το παιχνίδι είναι paused και πατιθεί το κουμπί n,
+			state->info.time = state->info.time + elapsed_time; // η κατάσταση του παιχνιδιού κινείται ένα frame μπροστά (αυξάνετε ο χρόνος κατά μια φορά σαν το παιχνίδι είναι σε κατάσταση pause)
+		}
+	if (ks->space == false && state->info.paused == false && state->info.game_over == false) { // Εαν το παιχνίδι δεν είναι paused και το space δεν είναι πατημένο, 
+		state->info.paused = false; 														   // τότε η ροή του παιχνιδιού κινείται κανονικά με τον χρόνο να ενημερώνετε
+		state->info.time = state->info.time + elapsed_time;
+	}
+
+	Vector all_clips = state->clips;
+
+	int channel_playing_now = state_playing_channel(state);
+
+	for (VectorNode node = vector_first(all_clips);
+		 node != VECTOR_EOF;
+		 node = vector_next(all_clips, node)) {
+
+			Clip clip = vector_node_value(all_clips, node);
+			
+			if (clip->channel == channel_playing_now 
+				&& clip->start >= state->info.time
+				&& state->info.time <= (clip->start + clip->duration)) {
+
+					list_insert_next(clip->recorded, list_last(clip->recorded), ks->changed_keys);
+			}
+			else if (state->info.time > (clip->start + clip->duration)
+					 && clip->channel == channel_playing_now) {
+					
+					List list = state->midi_events;
+
+					for (ListNode node = list_first(list);
+						 node != LIST_EOF;
+						 node = list_next(list, node)) {
+
+							MidiEvent event = list_node_value(list, node);
+
+							if (event->time >= clip->start
+								&& clip->channel == channel_playing_now
+								&& event->time <= (clip->start + clip->duration)) {
+
+								event->velocity = 0;
+							}
+						 }
+
+				    if (vector_next(all_clips, node) != VECTOR_EOF) {
+						state->recording_index++;
+					}
+						 
+					break;
+			}
+
+		 }
+
 }
 
 void state_destroy(State state) {

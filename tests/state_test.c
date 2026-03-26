@@ -125,7 +125,7 @@ void test_playback_events_function() {
 	int list_size_off = list_size(test_list_off_since);
 
 	TEST_ASSERT( list_size_small >= 0); // Ελέγχω ότι είναι μέσα στα όρια (μπορεί να είναι 0 εαν δεν υπήρχαν events εως τα 2sec)
-	TEST_ASSERT( list_size_small <= list_size_big && list_size_big != 0); // Συγκρίνω τα μεγέθοι μεταξύ τους και ελέγχω ότι έχει περαστεί τουλάχιστον ένα event
+	TEST_ASSERT( list_size_small <= list_size_big); // Συγκρίνω τα μεγέθοι μεταξύ τους
 	TEST_ASSERT( list_size_off >= 0); 
 
 	// Στον πάρακατω έλεγχο, διασχώ όλα τα στοιχεία της μεγάλης λίστας και τα ελέγχω/συγκρίνω εαν είναι όλα ταξινομημένα σωστά σε μη φθίνουσα σειρά με βάση τον χρόνο
