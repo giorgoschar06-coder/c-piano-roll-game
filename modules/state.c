@@ -326,7 +326,46 @@ void state_update(State state, KeyState ks, double elapsed_time) {
 							list_insert_next(clip->recorded, list_last(clip->recorded), key_mute);
 						}
 					}
-					state->recording_index++; // Αφού η ηχογράφηση ολοκληρώνετε με επιτυχία, αυξάνω το index για να προχωρίσω στο επόμενο event		
+
+					List clip_plays = clip->plays;
+
+					for (ListNode node = list_first(clip_plays);
+						 node != LIST_EOF;
+						 node = list_next(clip_plays, node)) {
+
+						ClipPlay clip_play_now = list_node_value(clip_plays, node);
+
+						double loop_starting_time = clip_play_now->start;
+
+						while (loop_starting_time < (clip_play_now->start + clip_play_now->duration)) {
+
+							List clip_recorded = clip->recorded;
+
+							for (ListNode node1 = list_first(clip_recorded);
+						 		node1 != LIST_EOF;
+						 		node1 = list_next(clip_recorded, node1)) {
+
+									MidiEvent event_now = list_node_value(clip_recorded, node1);
+
+									double new_event_duration = loop_starting_time + event_now->time - clip->start;
+
+									if (new_event_duration <= (clip_play_now->start + clip_play_now->duration)) {
+
+										MidiEvent new_event = malloc(sizeof(struct midi_event));
+
+										new_event->time = new_event_duration;
+										new_event->channel = event_now->channel;
+										new_event->key = event_now->key;
+										new_event->velocity = event_now->velocity;
+
+										list_insert_next(state->midi_events, list_last(state->midi_events), new_event);
+									}
+								}	
+
+							loop_starting_time = loop_starting_time + clip->duration;
+						}																									
+					}
+				state->recording_index++; // Αφού η ηχογράφηση ολοκληρώνετε με επιτυχία, αυξάνω το index για να προχωρίσω στο επόμενο event		
 			}
 	}
 }
