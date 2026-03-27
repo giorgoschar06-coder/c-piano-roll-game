@@ -180,20 +180,71 @@ void test_state_update() {
 	state_update(state, &ks, 10.0);
 	TEST_ASSERT(!state_info(state)->paused);
 	TEST_ASSERT(state_info(state)->time == 1.0);
-
-	struct key_state ks1 = empty_key_state();
 	
 	ks.space = true;
 	state_update(state, &ks, 1.0);
 	TEST_ASSERT(state_info(state)->paused);
 	TEST_ASSERT(state_info(state)->time == 2.0);
-	ks1.n = true;
-	state_update(state, &ks1, 0.5);
+	ks.space = false;
+	ks.n = true;
+	state_update(state, &ks, 0.5);
 	TEST_ASSERT(state_info(state)->paused);
 	TEST_ASSERT(state_info(state)->time == 2.5);
-	state_update(state, &ks1, 1.5);
+
+	state_update(state, &ks, 1.5);
 	TEST_ASSERT(state_info(state)->paused);
 	TEST_ASSERT(state_info(state)->time == 4.0);
+	
+	ks.space = true;
+	ks.n = false;
+	state_update(state, &ks, 0.0);
+	ks.space = false;
+
+	ks.active_keys[42] = 1;
+	ks.changed_keys[42] = 0;
+
+	state_update(state, &ks, 5.0);
+
+	ks.active_keys[42] = 0;
+	ks.changed_keys[42] = -1;
+
+	//--------------------------------------
+
+	ks.active_keys[43] = 1;
+	ks.changed_keys[43] = 0;
+
+	state_update(state, &ks, 5.0);
+
+	ks.active_keys[43] = 0;
+	ks.changed_keys[43] = -1;
+
+	//-------------------------------------
+
+	ks.active_keys[50] = 1;
+	ks.changed_keys[50] = 0;
+
+	ks.active_keys[55] = 1;
+	ks.changed_keys[55] = 0;
+
+	state_update(state, &ks, 5.0);
+
+	ks.active_keys[50] = 0;
+	ks.changed_keys[50] = -1;
+
+	ks.active_keys[55] = 0;
+	ks.changed_keys[55] = -1;
+
+	state_update(state, &ks, 1.0);
+	TEST_ASSERT(state_info(state)->time == 20.0);
+
+	List event_test = state_playback_events(state, 20.0);
+	
+    TEST_ASSERT(event_test != NULL);
+	TEST_ASSERT(list_size(event_test) > 0);
+	TEST_ASSERT(list_node_value(event_test, list_first(event_test)) != NULL);
+    TEST_ASSERT(list_node_value(event_test, list_last(event_test)) != NULL);
+
+    list_destroy(event_test);
 	state_destroy(state);
 }
 
