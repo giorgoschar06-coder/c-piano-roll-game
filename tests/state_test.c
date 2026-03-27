@@ -104,10 +104,10 @@ void test_playback_events_function() {
 	TEST_ASSERT(state != NULL); // Έλεγχος ότι η λίστα δεν είναι άδεια
 	
 	// Υποχρεωτικός ορισμός ενός key με empty_key_state για την χρήση του state_update
-	struct key_state key = empty_key_state(); 
+	struct key_state ks = empty_key_state(); 
 	
 	// Υποχρεωτική χρήση του state_update για να ανανεωθεί ο χρόνος του κομματιού σε επιθυμιτό χρόνο έτσι ώστε να μπορούν να γίνουν οι απαραίτητοι ελέγχοι
-	state_update(state, &key, 18.987);
+	state_update(state, &ks, 18.987);
 
 	// Παραδείγματα λιστών, ένα με μικρό since, ένα με μεγάλο και ένα που ξεπερνά το duration του τραγουδιού και βγαίνει αρνητικό το since
 	List test_list_small_since = state_playback_events(state, 2.0); 
@@ -164,8 +164,36 @@ void test_state_update() {
 	ks.space = true;
 
 	state_update(state, &ks, 0.0);
-	// TEST_ASSERT(!state_info(state)->paused);
+	TEST_ASSERT(!state_info(state)->paused);
 
+	ks.space = false;
+	state_update(state, &ks, 0.5);
+	TEST_ASSERT(!state_info(state)->paused);
+	TEST_ASSERT(state_info(state)->time == 0.5);
+
+	ks.space = true;
+	state_update(state, &ks, 0.5);
+	TEST_ASSERT(state_info(state)->paused);
+	TEST_ASSERT(state_info(state)->time == 1.0);
+
+	ks.space = true;
+	state_update(state, &ks, 10.0);
+	TEST_ASSERT(!state_info(state)->paused);
+	TEST_ASSERT(state_info(state)->time == 1.0);
+
+	struct key_state ks1 = empty_key_state();
+	
+	ks.space = true;
+	state_update(state, &ks, 1.0);
+	TEST_ASSERT(state_info(state)->paused);
+	TEST_ASSERT(state_info(state)->time == 2.0);
+	ks1.n = true;
+	state_update(state, &ks1, 0.5);
+	TEST_ASSERT(state_info(state)->paused);
+	TEST_ASSERT(state_info(state)->time == 2.5);
+	state_update(state, &ks1, 1.5);
+	TEST_ASSERT(state_info(state)->paused);
+	TEST_ASSERT(state_info(state)->time == 4.0);
 	state_destroy(state);
 }
 
@@ -174,9 +202,9 @@ void test_state_update() {
 TEST_LIST = {
 	{ "test_state_create", test_state_create },
 	{ "test_state_basic_functions", test_state_basic_functions },
-	{ "test_state_update", test_state_update },
 	{ "test_displayed_notes_function", test_displayed_notes_function },
 	{ "test_playback_events_function", test_playback_events_function },
+	{ "test_state_update", test_state_update },
 
 	{ NULL, NULL } // τερματίζουμε τη λίστα με NULL
 };
