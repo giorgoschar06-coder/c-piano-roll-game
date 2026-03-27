@@ -329,39 +329,42 @@ void state_update(State state, KeyState ks, double elapsed_time) {
 
 					List clip_plays = clip->plays;
 
+					// Διαπερνώ όλα τα plays του τραγουδιού από τα clips για να δημιουργήσω τα loops
 					for (ListNode node = list_first(clip_plays);
 						 node != LIST_EOF;
 						 node = list_next(clip_plays, node)) {
 
-						ClipPlay clip_play_now = list_node_value(clip_plays, node);
+						ClipPlay clip_play_now = list_node_value(clip_plays, node); // Παίρνω κάθε play του τραγουδιού
 
-						double loop_starting_time = clip_play_now->start;
+						double loop_starting_time = clip_play_now->start; // Ο χρόνος που ξεκινάω το loop είναι με βάση που ξεκινά ένα συγκεκριμένο play
 
-						while (loop_starting_time < (clip_play_now->start + clip_play_now->duration)) {
+						while (loop_starting_time < (clip_play_now->start + clip_play_now->duration)) { // Καθώς ο χρόνος του loop δεν ξεπέρασε το χρονικό όριο του play/segment
 
 							List clip_recorded = clip->recorded;
 
+							// Διάσχηση όλων των ηχογραφημένων clip για να τα βάζω να ξαναπαίζουν μέσα στο loop μέχρι να τελειώσει ο χρόνος του play
 							for (ListNode node1 = list_first(clip_recorded);
 						 		node1 != LIST_EOF;
 						 		node1 = list_next(clip_recorded, node1)) {
 
+									// Παίρνω όλα τα events που βρίσκονται στην ηχογράφηση των play
 									MidiEvent event_now = list_node_value(clip_recorded, node1);
 
-									double new_event_duration = loop_starting_time + event_now->time - clip->start;
+									double new_event_duration = loop_starting_time + event_now->time - clip->start; // Νέος χρόνος του event
 
-									if (new_event_duration <= (clip_play_now->start + clip_play_now->duration)) {
-
+									if (new_event_duration <= (clip_play_now->start + clip_play_now->duration)) { // Εαν το νέο event βγαίνει έξω από το χρονικό όριο του play/segment
 										MidiEvent new_event = malloc(sizeof(struct midi_event));
-
+										
+										// Δημιουργώ ένα νέο event τύπου αντίγραφου με τον νέο χρόνο του και με τα ίδια του υπόλοιπα στοιχεία
 										new_event->time = new_event_duration;
 										new_event->channel = event_now->channel;
 										new_event->key = event_now->key;
 										new_event->velocity = event_now->velocity;
 
-										list_insert_next(state->midi_events, list_last(state->midi_events), new_event);
+										list_insert_next(state->midi_events, list_last(state->midi_events), new_event); // Εισάγω το νέο event στο τέλος της λίστας με τα υπόλοιπα midi events
 									}
 								}	
-
+							// Εδώ γίνετε το όλο loop που προσθέτω τον χρόνο του clip στον χρόνο που βρίσκετε το loop για να ξαναπαίξει
 							loop_starting_time = loop_starting_time + clip->duration;
 						}																									
 					}
