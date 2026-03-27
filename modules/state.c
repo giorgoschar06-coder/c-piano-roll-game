@@ -171,22 +171,21 @@ int state_playing_channel(State state) {
 	// Το κανάλι στο οποίο παίζει "live" ο χρήστης είναι το κανάλι του clip στο
 	// οποίο δείχνει το recording_index.
 
-	// Διάσχηση όλων των clips μορφής vector που περιέχουν το channel κάθε clip
-	for (VectorNode node = vector_first(state->clips);
-		node != VECTOR_EOF;
-		node = vector_next(state->clips, node)) {
+	Vector state_clips = state->clips;
+	
+	int all_clips_num = vector_size(state_clips); // Πέρνω το συνολικό αριθμό των clips 
 
-		Clip clip = vector_node_value(state->clips, node); // Παίρνω το κάθε clip ξεχωριστά
-		
-		state->recording_index = (uint)clip->channel; // Παίρνω από το καθένα μόνο το channel του και το εισάγω στο recording_index
+	int recording_index_now = (int)state->recording_index; // Πέρνω το channel από το recording_index
+	
+	if (all_clips_num > 0 && all_clips_num <= recording_index_now) { // Έλεγχος στην περίπτωση που δεν υπάρχουν άλλα clips, να συνεχίσει να δείχνει στο τελευτέο
+		recording_index_now = all_clips_num - 1;
 	}
-
-	uint live_channel_playing = state->recording_index; // Πέρνω το channel από το recording_index
-		
-	int int_live_channel_playing = (int)live_channel_playing; // Kάνω direference το channel για να μπορώ να το επιστρέψω
 	
-	return int_live_channel_playing;
+	Clip clip_playing_now = vector_get_at(state_clips, recording_index_now); // Clip στο οποίο το κομμάτι βρίσκετε τώρα
 	
+	int live_channel_playing = clip_playing_now->channel; // Το channel του clip
+	
+	return live_channel_playing; // Επιστροφή channel
 }
 
 double state_measure_duration(State state) {
@@ -244,7 +243,7 @@ List state_playback_events(State state, double since) {
 
 	List playback_events = list_create(NULL); // Δημιουργία λίστας για να μπουν τα events ταξινομημένα 
 
-	List list = state->midi_file->events; // Δημιουργία λίστας με όλα τα events του τραγουδιού
+	List list = state->midi_events; // Δημιουργία λίστας με όλα τα events του τραγουδιού
 
 	for (ListNode node = list_first(list); // Διάσχηση όλων των events της λίστας για να κρατήσω αυτά που συμβαδίζουν με τα χρονικά μου πλαίσια
 		 node != LIST_EOF;
@@ -274,7 +273,7 @@ void state_update(State state, KeyState ks, double elapsed_time) {
 	if (ks->n == true && state->info.paused == true && state->info.game_over == false) { // Εαν το παιχνίδι είναι paused και πατιθεί το κουμπί n,
 			state->info.time = state->info.time + elapsed_time; // η κατάσταση του παιχνιδιού κινείται ένα frame μπροστά (αυξάνετε ο χρόνος κατά μια φορά σαν το παιχνίδι είναι σε κατάσταση pause)
 		}
-	if (ks->space == false && state->info.paused == false && state->info.game_over == false) { // Εαν το παιχνίδι δεν είναι paused και το space δεν είναι πατημένο, 
+	if (state->info.paused == false && state->info.game_over == false) { // Εαν το παιχνίδι δεν είναι paused και το space δεν είναι πατημένο, 
 		state->info.paused = false; 														   // τότε η ροή του παιχνιδιού κινείται κανονικά με τον χρόνο να ενημερώνετε
 		state->info.time = state->info.time + elapsed_time;
 	}
