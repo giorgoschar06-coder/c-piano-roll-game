@@ -163,54 +163,72 @@ void test_state_update() {
 	struct key_state ks = empty_key_state();
 	ks.space = true;
 
+	// Έλεγχος ότι με το πρώτο space το παιχνίδι γίνετε unpaused
 	state_update(state, &ks, 0.0);
 	TEST_ASSERT(!state_info(state)->paused);
 
+	// Έλεγχος ότι το παιχνίδι μετά από 0.5 sec μένει unpaused και προχωρά κανονικά ο χρόνος του
 	ks.space = false;
 	state_update(state, &ks, 0.5);
 	TEST_ASSERT(!state_info(state)->paused);
 	TEST_ASSERT(state_info(state)->time == 0.5);
 
+	// Έλεγχος ότι εαν μετά από 0.5 sec πατίσω space, το παιχνίδι γίνετε paused και ο χρόνος του είναι 1.0 sec
 	ks.space = true;
 	state_update(state, &ks, 0.5);
 	TEST_ASSERT(state_info(state)->paused);
 	TEST_ASSERT(state_info(state)->time == 1.0);
 
+	// Έλεγχος ότι εαν ξαναπατίσω space μετά από 10sec, το παιχνίδι γίνετε unpaused αλλά ο χρόνος που τρέχει παραμένει στο 1.0sec
 	ks.space = true;
 	state_update(state, &ks, 10.0);
 	TEST_ASSERT(!state_info(state)->paused);
 	TEST_ASSERT(state_info(state)->time == 1.0);
 	
+	// Έλεγχος ότι εαν μετά από 1.0sec πατίσω space, το παιχνίδι γίνετε paused και ο χρόνος του 2.0sec
 	ks.space = true;
 	state_update(state, &ks, 1.0);
 	TEST_ASSERT(state_info(state)->paused);
 	TEST_ASSERT(state_info(state)->time == 2.0);
+
+	// Έλεγχος ότι εαν πατίσω μόνο το n σαν το παιχνίδι είναι paused, το παιχνίδι προχωρά ένα frame μπροστά κατά 0.5sec σαν είναι ακόμη paused
+	// και ο χρόνος που τρέχει γίνετε 2.5sec
 	ks.space = false;
 	ks.n = true;
 	state_update(state, &ks, 0.5);
 	TEST_ASSERT(state_info(state)->paused);
 	TEST_ASSERT(state_info(state)->time == 2.5);
 
+	// Παρόμιος με τον προηγούμενο έλεγχο για επιβεβαίωση ότι με το n προχωράνε μόνο τα frames του παιχνιδιού και το παιχνίδι παραμένει σε κατάσταση paused
 	state_update(state, &ks, 1.5);
 	TEST_ASSERT(state_info(state)->paused);
 	TEST_ASSERT(state_info(state)->time == 4.0);
 	
+	// Κάνω unpause το παιχνίδι
 	ks.space = true;
 	ks.n = false;
 	state_update(state, &ks, 0.0);
 	ks.space = false;
 
+	//--------------------------------------
+	// Πάρακατω ελέχετε το recording and looping mechanism του state_update
+
+	// Ενεργοποιώ δηλαδή παίζω την νότα που βρίσκετε στην θέση 42 (Φα#)
 	ks.active_keys[42] = 1;
 	ks.changed_keys[42] = 0;
 
+	// Παιρνώ την νότα στο state_update για να παιχτεί μέσα στα 5sec και να γίνει η ηχογράφηση της
+	// σε ένα clip και μπορεί να προχωρίσει και σε ένα loop εαν τελειώσει μες τα 5sec το clip
 	state_update(state, &ks, 5.0);
 
+	// Απενεργοποιώ την νότα για να μην παίζει για πάντα
 	ks.active_keys[42] = 0;
 	ks.changed_keys[42] = -1;
 
 	//--------------------------------------
+	// Κάνω τον ίδιο έλεγχο με πιο πάνω απλός τώρα 5sec μετά από την πρώτη ηχογράφηση για να επιβαιβεώσω ότι οι νότες ηχογραφούνται
 
-	ks.active_keys[43] = 1;
+	ks.active_keys[43] = 1; // Σολ
 	ks.changed_keys[43] = 0;
 
 	state_update(state, &ks, 5.0);
@@ -219,11 +237,12 @@ void test_state_update() {
 	ks.changed_keys[43] = -1;
 
 	//-------------------------------------
+	// Σε αυτό τον έλεγχο ενεργοποιώ-παίζω δύο νότες που θα ηχογραφούν για να σιγουριά ότι το πρόγραμμα μπορεί να χειριστεί περισσότερες από μια νότες την φορά
 
-	ks.active_keys[50] = 1;
+	ks.active_keys[50] = 1; // Ρε
 	ks.changed_keys[50] = 0;
 
-	ks.active_keys[55] = 1;
+	ks.active_keys[55] = 1; // Σολ
 	ks.changed_keys[55] = 0;
 
 	state_update(state, &ks, 5.0);
@@ -235,15 +254,20 @@ void test_state_update() {
 	ks.changed_keys[55] = -1;
 
 	state_update(state, &ks, 1.0);
+
+	// Έλεγχος ότι ο χρόνος κυλούσε κανονικά όλη την διάρκεια της ηχογράφησης
 	TEST_ASSERT(state_info(state)->time == 20.0);
 
+	// Ανήγω ένα event με την συνάρτηση στην οποία  πρέπει να αποθηκεύονται όλα τα recordings τα τελευταία 20sec για έλεγχο ότι όντως έχει γίνει η ηχογράφηση
 	List event_test = state_playback_events(state, 20.0);
 	
+	// Για να επιβαιβεώσω ότι η ηχογράφηση έγεινε με επιτυχία, η λίστα πρέπει να έχει περιεχόμενο (να μην είναι άδεια) και το μέγεθος της να είναι μεγαλύτερο του 0
     TEST_ASSERT(event_test != NULL);
 	TEST_ASSERT(list_size(event_test) > 0);
 	TEST_ASSERT(list_node_value(event_test, list_first(event_test)) != NULL);
     TEST_ASSERT(list_node_value(event_test, list_last(event_test)) != NULL);
 
+	// Καταστροφή της δοκιμαστικής λίστας και state για αποφυγή των memory leaks
     list_destroy(event_test);
 	state_destroy(state);
 }
