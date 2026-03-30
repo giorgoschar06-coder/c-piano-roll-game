@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "ADTList.h"
 #include "ADTVector.h"
@@ -127,6 +128,305 @@ static void create_clips(State state) {
 		}
 	}
 }
+
+static void state_restart_game(State state) {
+	
+	state->info.paused = true;
+	state->info.game_over = false;
+	state->info.accuracy = 0.0;
+	state->info.score = 0.0;
+	state->info.time = 0.0;
+
+	
+	for (int k = 0 ; k < vector_size(state->clips) ; k++) {
+		Clip clip = vector_get_at(state->clips, k);
+		list_destroy(clip->recorded);
+		clip->recorded = list_create(free);
+	}
+
+	state->recording_index = 0;
+}
+
+static void state_accuracy_level(State state, double accuracy) {
+
+	if (state->info.level == 1) {
+		if (accuracy >= 0.10) {
+			state->info.level++;
+			state_restart_game(state);
+		}
+		else {
+			state->info.game_over = true;
+		}
+	}
+	else if (state->info.level == 2) {
+		if (accuracy >= 0.20) {
+			state->info.level++;
+			state_restart_game(state);
+		}
+		else {
+			state->info.game_over = true;
+		}
+	}
+	else if (state->info.level == 3) {
+		if (accuracy >= 0.30) {
+			state->info.level++;
+			state_restart_game(state);
+		}
+		else {
+			state->info.game_over = true;
+		}
+	}
+	else if (state->info.level == 4) {
+		if (accuracy >= 0.40) {
+			state->info.level++;
+			state_restart_game(state);
+		}
+		else {
+			state->info.game_over = true;
+		}
+	}
+	else if (state->info.level == 5) {
+		if (accuracy >= 0.50) {
+			state->info.level++;
+			state_restart_game(state);
+		}
+		else {
+			state->info.game_over = true;
+		}
+	}
+	else if (state->info.level == 6) {
+		if (accuracy >= 0.60) {
+			state->info.level++;
+			state_restart_game(state);
+		}
+		else {
+			state->info.game_over = true;
+		}
+	}
+	else if (state->info.level == 7) {
+		if (accuracy >= 0.70) {
+			state->info.level++;
+			state_restart_game(state);
+		}
+		else {
+			state->info.game_over = true;
+		}
+	}
+	else if (state->info.level == 8) {
+		if (accuracy >= 0.80) {
+			state->info.level++;
+			state_restart_game(state);
+		}
+		else {
+			state->info.game_over = true;
+		}
+	}
+	else if (state->info.level == 9) {
+		if (accuracy >= 0.90) {
+			state->info.level++;
+			state_restart_game(state);
+		}
+		else {
+			state->info.game_over = true;
+		}
+	}
+}
+
+static void state_clip_accuracy(State state, Clip clip) {
+
+	List clip_song = list_create(free);
+
+	List list = state->midi_file->events;
+
+	for (ListNode node = list_first(list);
+		 node != LIST_EOF;
+		 node = list_next(list, node)) {
+
+			MidiEvent temp_event = list_node_value(list, node);
+
+			if (temp_event->channel == clip->channel &&
+				temp_event->time >= clip->start &&
+				temp_event->time <= (clip->start + clip->duration)) {
+
+					MidiEvent copy_event = malloc(sizeof(struct midi_event));
+
+					*copy_event = *temp_event;
+
+					list_insert_next(clip_song, list_last(clip_song), copy_event);
+				}
+		 }
+
+	int song_note_on_count = 0;
+
+	for (ListNode node_song = list_first(clip_song);
+		 node_song != LIST_EOF;
+		 node_song = list_next(clip_song, node_song)) {
+
+			MidiEvent note_on_song = list_node_value(clip_song, node_song);
+
+			if (note_on_song->velocity > 0) {
+				song_note_on_count++;
+			}
+		}
+
+	List clip_recorded = clip->recorded;
+
+	double score = 0.0;
+
+	for (ListNode node_rec = list_first(clip_recorded);
+		 node_rec != LIST_EOF;
+		 node_rec = list_next(clip_recorded, node_rec)) {
+
+		MidiEvent note_on_rec = list_node_value(clip_recorded, node_rec);
+
+		if (note_on_rec->velocity == 0) {
+			continue;
+		}
+
+		ListNode prev_node_song = LIST_BOF;
+
+		for (ListNode node_song = list_first(clip_song);
+		 	node_song != LIST_EOF;
+		 	node_song = list_next(clip_song, node_song)) {
+
+				MidiEvent note_on_song = list_node_value(clip_song, node_song);
+
+				if (note_on_song->velocity == 0) {
+					prev_node_song = node_song;
+					continue;
+				}
+
+				double time_between;
+
+				if (note_on_rec->time >= note_on_song->time)
+				time_between = note_on_rec->time - note_on_song->time;
+				else
+				time_between = note_on_song->time - note_on_rec->time;
+
+				if (time_between <= 0.1 && time_between >=0 &&
+					note_on_song->channel == note_on_rec->channel &&
+					note_on_song->key == note_on_rec->key &&
+					note_on_song->velocity > 0 && note_on_rec->velocity > 0) {
+						
+						double note_rec_duration = 0.0;
+
+						MidiEvent correct_note_off_rec = NULL; // Copy εκεί που τελειώνει η νότα για σκοπούς auto-correction
+
+						for (ListNode temp_node_rec = node_rec;
+							temp_node_rec != LIST_EOF;
+							temp_node_rec = list_next(clip_recorded, temp_node_rec)) {
+								
+								MidiEvent temp_note_on_rec = list_node_value(clip_recorded, temp_node_rec);
+
+								if (temp_note_on_rec->key == note_on_rec->key &&
+									temp_note_on_rec->channel == note_on_rec->channel &&
+							   		temp_note_on_rec->velocity == 0) {
+										
+										note_rec_duration = temp_note_on_rec->time - note_on_rec->time;
+										correct_note_off_rec = temp_note_on_rec;
+										
+										break;
+									}
+							}
+						
+						double note_song_duration = 0.0; 
+
+						for (ListNode temp_node_song = node_song;
+							temp_node_song != LIST_EOF;
+							temp_node_song = list_next(clip_song, temp_node_song)) {
+								
+								MidiEvent temp_note_on_song = list_node_value(clip_song, temp_node_song);
+
+								if (temp_note_on_song->key == note_on_rec->key &&
+									temp_note_on_song->channel == note_on_rec->channel &&
+							   		temp_note_on_song->velocity == 0) {
+										
+										note_song_duration = temp_note_on_song->time - note_on_song->time;
+										break;
+									}
+							}
+
+						double time_diff = 0.0;
+
+						if (note_on_rec->time >= note_on_song->time) {
+
+							time_diff = note_on_rec->time - note_on_song->time;
+						}
+						else {
+
+							time_diff = note_on_song->time - note_on_rec->time;
+						}
+						
+						double duration_diff = 0.0;
+
+						if (note_on_rec->channel == 9 || note_on_song->channel == 9) {
+							
+							duration_diff = 0.0;
+						}
+						else {
+							if (note_rec_duration >= note_song_duration) {
+
+								duration_diff = note_rec_duration - note_song_duration;
+							}
+							else {
+
+								duration_diff = note_song_duration - note_rec_duration;
+							}
+						}
+
+						double diff = time_diff + duration_diff;
+
+						score = score + exp(- ((diff / 0.1) * (diff / 0.1)));
+
+						note_on_rec->time = note_on_song->time; // Αρχή νότας
+
+						if (correct_note_off_rec != NULL) {							
+							correct_note_off_rec->time = note_on_rec->time + note_song_duration; // Τέλος νότας
+						}
+
+						list_remove_next(clip_song, prev_node_song);
+						break;
+					}
+					prev_node_song = node_song;
+				}
+			}
+
+	int played_note_on_count = 0;
+
+	for (ListNode node_rec = list_first(clip_recorded);
+		 node_rec != LIST_EOF;
+		 node_rec = list_next(clip_recorded, node_rec)) {
+		
+			MidiEvent note_on_rec = list_node_value(clip_recorded, node_rec);
+
+			if (note_on_rec->velocity > 0) {
+				played_note_on_count ++;
+			}
+		 }
+
+	int max = (song_note_on_count > played_note_on_count) ? song_note_on_count : played_note_on_count;
+
+	double accuracy = 0.0;
+
+	if (score > 0 && (double)max > 0) {
+		accuracy = score / max;
+	}
+	else {
+		state->info.score = state->info.score + 0.0;
+		state->info.accuracy = state->info.accuracy + 0.0;
+
+		list_destroy(clip_song);
+		return;
+	}
+	
+	state->info.score = state->info.score + score;
+
+	state->info.accuracy = ((state->info.accuracy * state->recording_index) + accuracy) / (state->recording_index + 1); //(παλαιός μέσος όρος * πλήθος των παλιών clips) + νέο accuracy) / συνολικό πλήθος clips.
+
+	list_destroy(clip_song);
+	return;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 State state_create(String midi_file) {
@@ -277,6 +577,12 @@ void state_update(State state, KeyState ks, double elapsed_time) {
 		}
 	}
 
+	if (state->info.time >= state->midi_file->duration &&
+	    state->info.game_over == false) {
+		state_accuracy_level(state, state->info.accuracy);
+		return; // stop because it just restarted
+	}
+
 	Vector all_clips = state->clips; // Vector για να έχω πρόσβαση σε όλα τα clips
 
 	int clip_playing_now = (int)state->recording_index; // Αριθμός του clip που παίζει τώρα
@@ -324,6 +630,8 @@ void state_update(State state, KeyState ks, double elapsed_time) {
 							list_insert_next(clip->recorded, list_last(clip->recorded), key_mute);
 						}
 					}
+
+					state_clip_accuracy(state, clip);
 
 					List clip_plays = clip->plays;
 

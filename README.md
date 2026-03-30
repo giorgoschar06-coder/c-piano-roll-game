@@ -24,6 +24,7 @@ sdi2400999,my-github-username,Όνομα Επώνυμο
 
 - Υλοποίηση της Άσκησης 1 στο stace.c
 - Υλοποίηση της Άσκησης 2 στο stace.c και state_test.c
+- Υλοποίηση της Άσκησης 3 στο stace.c και state_test.c
 
 ### Documentation
 
