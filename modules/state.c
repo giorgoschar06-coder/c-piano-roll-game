@@ -680,5 +680,15 @@ void state_update(State state, KeyState ks, double elapsed_time) {
 }
 
 void state_destroy(State state) {
-	// Προς υλοποίηση
+	if (state == NULL) {
+		return;
+	}
+
+	k08midi_file_destroy(state->midi_file);
+
+	list_destroy(state->midi_events);
+
+	vector_destroy(state->clips);
+
+	free(state);
 }
