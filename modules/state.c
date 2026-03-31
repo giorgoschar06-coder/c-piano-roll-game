@@ -683,15 +683,15 @@ void state_update(State state, KeyState ks, double elapsed_time) {
 }
 
 void state_destroy(State state) {
-	if (state == NULL) {
+	if (state == NULL) { // Ελέγχω εαν η state είναι άδεια πρωτού καταστρέψω τις λίστες για να μην κάνει crash το πρόγραμμα
 		return;
 	}
 
-	k08midi_file_destroy(state->midi_file);
+	k08midi_file_destroy(state->midi_file); // Καταστροφή midi αρχείου
 
-	list_destroy(state->midi_events);
+	list_destroy(state->midi_events); // Καταστροφή όλων των midi events
 
-	vector_destroy(state->clips);
+	vector_destroy(state->clips); // Καταστροφή όλων των clips
 
-	free(state);
+	free(state); // Απελευθέρωση μνήμης από state για αποφυγή των memory leaks
 }
