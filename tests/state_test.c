@@ -278,29 +278,36 @@ void test_scoring_and_auto_correction() {
 
 	struct key_state ks = empty_key_state();
 
+	// Κάνω unpause το παιχνίδι με το να πατήσω στιγμιαία το space και το ελέγχω ότι έγεινε επιτυχώς
 	ks.space = true;
 	state_update(state, &ks, 0.0);
 	ks.space = false;
 	TEST_ASSERT(!state_info(state)->paused);
 
+	// Ενεργοποιώ πολλές νότες μαζί
 	ks.active_keys[12] = 1; ks.changed_keys[12] = 0;
 	ks.active_keys[13] = 1; ks.changed_keys[13] = 0;
 	ks.active_keys[14] = 1; ks.changed_keys[14] = 0;
 
+	// Ανανεώνω το state με τες νότες που παιχτίκαν για να ηχογραφηθούν
 	state_update(state, &ks, 9.0);
 
+	// Απενεργοποιώ τις νότες
 	ks.active_keys[12] = 0; ks.changed_keys[12] = -1;
 	ks.active_keys[13] = 0; ks.changed_keys[13] = -1;
 	ks.active_keys[14] = 0; ks.changed_keys[14] = -1;
 
+	// Ανανεώνω το state για να σταματήσουν οι νότες να παίζουν και να τελειώσω την ηχογράφηση
 	state_update(state, &ks, 9.0);
 
+	// Ελέγχω τα info του state εαν είναι σε αναμενώμενη κατάσταση και έχουν αναμενώμενη τιμή με βάση τις πια πάνω αλλαγές
 	TEST_ASSERT(!state_info(state)->paused);
 	TEST_ASSERT(!state_info(state)->game_over);
 	TEST_ASSERT(state_info(state)->time == 18.0);
-	TEST_ASSERT(state_info(state)->accuracy >= 0.0);
-	TEST_ASSERT(state_info(state)->accuracy <= 1.0);
-	TEST_ASSERT(state_info(state)->score >= 0.0);
+	TEST_ASSERT(state_info(state)->accuracy >= 0.0); // Το πιο πιθανό θα παραμείνει 0 επειδή παίζω νότες στα τυφλά αλλά το να παραμείνει >=0 
+													  // είναι το ιδανικότερο που μπορώ να πάρω (σε ένα απλό έλεγχο) για να ξέρω ότι το πρόγραμμα δουλέυει σωστά
+	TEST_ASSERT(state_info(state)->accuracy <= 1.0); 
+	TEST_ASSERT(state_info(state)->score >= 0.0); // Ότι ισχύει για το accuracy ισχύει και για το score											
 	TEST_ASSERT(state_info(state)->level == 1);
 
 	state_destroy(state);
@@ -317,17 +324,20 @@ void test_level_progression() {
 	ks.space = false;
 	TEST_ASSERT(!state_info(state_fail_level)->paused);
 
+	// Σκόπιμα δεν παίζω καμία νότα μέχρι και την ώρα που θα τελειώσει ο χρόνος του παιχνδιού (που είναι 18.987)
+	// έτσι ώστε να αποτύχω σίγουρα, να πάρω game_over και το level να παραμείνει το ίδιο
 	state_update(state_fail_level, &ks, 20.0);
 
 	TEST_ASSERT(!state_info(state_fail_level)->paused);
-	TEST_ASSERT(state_info(state_fail_level)->game_over);
+	TEST_ASSERT(state_info(state_fail_level)->game_over); // Game Over = true
 	TEST_ASSERT(state_info(state_fail_level)->time == 20.0);
 	TEST_ASSERT(state_info(state_fail_level)->accuracy == 0.0);
 	TEST_ASSERT(state_info(state_fail_level)->score == 0.0);
-	TEST_ASSERT(state_info(state_fail_level)->level == 1);
+	TEST_ASSERT(state_info(state_fail_level)->level == 1); // Παραμένει στο ίδιο level
 
 	state_destroy(state_fail_level);
 	
+	// Καταστρέφω το παλιό state και δημιουργώ νέο
 	State state_level_up = state_create("test.mid");
 	TEST_ASSERT(state_level_up != NULL);
 
@@ -338,14 +348,17 @@ void test_level_progression() {
 	ks.space = false;
 	TEST_ASSERT(!state_info(state_level_up)->paused);
 
+	// Σε αυτό το state βάζω αυτόματα ότι το accuracy είναι αυτό που χρειάζετε έτσι ώστε το παιχνίδι να
+	// μπορεί να προχωρίσει στο επόμενο στάδιο
 	state_info(state_level_up)->accuracy = 1.0;
 
+	// Προχωρώ τον χρόνο χωρίς να ενεργοποιήσω κάτι έτσι ώστε να τελειώσει ο χρόνος του παιχνιδιού
 	state_update(state_level_up, &ks, 20.0);
 
-	TEST_ASSERT(state_info(state_level_up)->paused);
+	TEST_ASSERT(state_info(state_level_up)->paused); // Μόλις έκανε restart για αυτό είναι σε κατάσταση pause
 	TEST_ASSERT(!state_info(state_level_up)->game_over);
-	TEST_ASSERT(state_info(state_level_up)->time == 0.0);
-	TEST_ASSERT(state_info(state_level_up)->level == 2);
+	TEST_ASSERT(state_info(state_level_up)->time == 0.0); // Το παιχνίδι γίνετε restarted αφού τελείωσε το προηγούμενο για αυτό και ο χρόνος πρέπει να μηδενιστεί
+	TEST_ASSERT(state_info(state_level_up)->level == 2); // Ελέγχω ότι πέρασε με επιτυχία στο επόμενο στάδιο
 
 	state_destroy(state_level_up);
 }
