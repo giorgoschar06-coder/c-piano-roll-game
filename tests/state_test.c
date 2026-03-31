@@ -219,7 +219,7 @@ void test_state_update() {
 
 	// Παιρνώ την νότα στο state_update για να παιχτεί μέσα στα 5sec και να γίνει η ηχογράφηση της
 	// σε ένα clip και μπορεί να προχωρίσει και σε ένα loop εαν τελειώσει μες τα 5sec το clip
-	state_update(state, &ks, 5.0);
+	state_update(state, &ks, 2.5);
 
 	// Απενεργοποιώ την νότα για να μην παίζει για πάντα
 	ks.active_keys[42] = 0;
@@ -231,7 +231,7 @@ void test_state_update() {
 	ks.active_keys[43] = 1; // Σολ
 	ks.changed_keys[43] = 0;
 
-	state_update(state, &ks, 5.0);
+	state_update(state, &ks, 2.5);
 
 	ks.active_keys[43] = 0;
 	ks.changed_keys[43] = -1;
@@ -256,10 +256,10 @@ void test_state_update() {
 	state_update(state, &ks, 1.0);
 
 	// Έλεγχος ότι ο χρόνος κυλούσε κανονικά όλη την διάρκεια της ηχογράφησης
-	TEST_ASSERT(state_info(state)->time == 20.0);
+	TEST_ASSERT(state_info(state)->time == 15.0);
 
 	// Ανήγω ένα event με την συνάρτηση στην οποία  πρέπει να αποθηκεύονται όλα τα recordings τα τελευταία 20sec για έλεγχο ότι όντως έχει γίνει η ηχογράφηση
-	List event_test = state_playback_events(state, 20.0);
+	List event_test = state_playback_events(state, 15.0);
 	
 	// Για να επιβαιβεώσω ότι η ηχογράφηση έγεινε με επιτυχία, η λίστα πρέπει να έχει περιεχόμενο (να μην είναι άδεια) και το μέγεθος της να είναι μεγαλύτερο του 0
     TEST_ASSERT(event_test != NULL);
