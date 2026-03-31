@@ -129,26 +129,34 @@ static void create_clips(State state) {
 	}
 }
 
+// Custom απαραίτητη συνάρτηση στην οποία κάνω restart το παιχνίδι είτε για να πάει ο παίχτης στο επόμενο level είτε για να ξεκινήσει από την αρχή
 static void state_restart_game(State state) {
 	
+	// Αλλαγή της κατάστασης και των τιμών όλου του info του state για να γίνει restart
 	state->info.paused = true;
 	state->info.game_over = false;
 	state->info.accuracy = 0.0;
 	state->info.score = 0.0;
 	state->info.time = 0.0;
 
-	
+	// Καταστρέφω όλα τα clips στο οποία ηχογράφησε ο χρήστης και δημιουργώ νέα τα οποία είναι άδεια και έτοιμα να γεμίσουν με τις νότες 
+	// της νέας ηχογράφησης
 	for (int k = 0 ; k < vector_size(state->clips) ; k++) {
 		Clip clip = vector_get_at(state->clips, k);
 		list_destroy(clip->recorded);
 		clip->recorded = list_create(free);
 	}
 
-	state->recording_index = 0;
+	state->recording_index = 0; // Το index του recording επαναφέρετε στο μηδέν για να ξεκινήσουν οι ηχογραφήσεις από την αρχή
 }
 
+// Custom level progression σύστημα αξιολόγησης της επίδοσης του χρήστης με custom ελάχιστο accuracy που απαιτήτε για να
+// προχωρίσης στο επόμενο level. Ενδέχετε να αλλάξει ανάλογα με την δυσκολία του τραγουδιού
 static void state_accuracy_level(State state, double accuracy) {
 
+	// Εαν βρίσκομε σε ένα συγκεκριμένο level και πάρω πάνω από το επιθυμιτό accuracy,
+	// τότε περνώ στο επόμενω level (ίδιο κομμάτι με μεγαλύτερο τουλάχιστο accuracy)
+	// και κάνω restart το παιχνίδι, αλιώς το τερματίζω με game_over = true
 	if (state->info.level == 1) {
 		if (accuracy >= 0.10) {
 			state->info.level++;
@@ -232,12 +240,17 @@ static void state_accuracy_level(State state, double accuracy) {
 	}
 }
 
+// Custom συνάρτηση στην οποία εφαρμώζω ένα scoring system μαζί με auto-correction της προσπάθειας του χρήστη
 static void state_clip_accuracy(State state, Clip clip) {
 
+	// Δημιουργία λίστας που θα περιέχει έτοιμα όλα τα clips του κομματιού 
 	List clip_song = list_create(free);
 
 	List list = state->midi_file->events;
 
+	// Διαπερνώ την λίστα που περιέχει όλα τα events του κομματιού για να τα αντιγράψω και να τα περάσω με δείκτες στην νέα λίστα 
+	// έτσι ώστε οι αλλαγές που θα γίνουν πάνω τους να μην είναι οριστικές και να χαλάσουν το midi κομμάτι, αλλά να έχω ένα πλήρες
+	// copy του κομματιού που θα μπορώ να το επεξεργαστώ άφοβα
 	for (ListNode node = list_first(list);
 		 node != LIST_EOF;
 		 node = list_next(list, node)) {
@@ -250,85 +263,97 @@ static void state_clip_accuracy(State state, Clip clip) {
 
 					MidiEvent copy_event = malloc(sizeof(struct midi_event));
 
-					*copy_event = *temp_event;
+					*copy_event = *temp_event; // Δείκτες για να αντιγράψω τα events χωρίς να πειράξω την original λίστα 
 
 					list_insert_next(clip_song, list_last(clip_song), copy_event);
 				}
 		 }
 
-	int song_note_on_count = 0;
+	int song_note_on_count = 0; // όλες οι νότες που παιχτήκαν στο κομμάτι
 
+	// Διαπερνώ κάθε event του clip_song για να πάρω τον αριθμό των νοτών που παιχτήκαν κατά την διάρκεια του κομματιού
 	for (ListNode node_song = list_first(clip_song);
 		 node_song != LIST_EOF;
 		 node_song = list_next(clip_song, node_song)) {
 
 			MidiEvent note_on_song = list_node_value(clip_song, node_song);
 
-			if (note_on_song->velocity > 0) {
+			if (note_on_song->velocity > 0) { // Παίχτηκε η νότα εαν το velocity της έγεινε μεγαλύτερο του 0
 				song_note_on_count++;
 			}
 		}
 
-	List clip_recorded = clip->recorded;
+	List clip_recorded = clip->recorded; // Η λίστα που είναι ηχογραφημένη η προσπάθεια του χρήστη
 
-	double score = 0.0;
+	double score = 0.0; // σκορ πόντων του παιχνιδιού
 
+	// Διαπερνώ όλα τα events/νότες της προσπάθειας που μόλις ηχογράφησε ο χρήστης για να ελέξω νότα προς νότα με βάση τις νότες που παίζονται στο original κομμάτι
 	for (ListNode node_rec = list_first(clip_recorded);
 		 node_rec != LIST_EOF;
 		 node_rec = list_next(clip_recorded, node_rec)) {
 
 		MidiEvent note_on_rec = list_node_value(clip_recorded, node_rec);
 
-		if (note_on_rec->velocity == 0) {
+		// Επειδή με την ενεργοποίηση μιας νότας, αργότερα θα πρέπει να απενεργοποιηθεί, σε αυτό το σημείο κάνω skip της νότες που απενεργοποιούνται
+		if (note_on_rec->velocity == 0) { 
 			continue;
 		}
 
-		ListNode prev_node_song = LIST_BOF;
+		// Μεταβλητή που θα κρατάω τον προηγούμενο κόμβο για διαγραφή των events που γίνονται match και την αρχικοποιώ με τον κόμβο πριν τον πρώτο της λίστας
+		ListNode prev_node_song = LIST_BOF; 
 
+		// Διαπερνώ όλα events με βάση το midi αρχείο δηλαδή της σωστές νότες που πρέπει να παίξει ο χρήστης με βάση το κομμάτι
 		for (ListNode node_song = list_first(clip_song);
 		 	node_song != LIST_EOF;
 		 	node_song = list_next(clip_song, node_song)) {
 
 				MidiEvent note_on_song = list_node_value(clip_song, node_song);
 
-				if (note_on_song->velocity == 0) {
+				if (note_on_song->velocity == 0) { // Εαν η νότα απενεργοποιήτε την κάνω ξανά skip και μεταφέρω τον προηγούμενο κόμβο στον τωρινό 
 					prev_node_song = node_song;
 					continue;
 				}
 
-				double time_between;
+				double time_between; // Χρόνος μεταξύ της νότας που έπαιξε ο χρήστης και της νότας που έπρεπε να παίξει με βάση το κομμάτι
 
+				// Ελέγχω πια νότα μετακύ των δύο παίζετε πρώτη και υπολογίζω τον μεταξύ τους χρόνο αφαιρώντας τον μεγάλο χρόνο από τον μικρό
 				if (note_on_rec->time >= note_on_song->time)
 				time_between = note_on_rec->time - note_on_song->time;
 				else
 				time_between = note_on_song->time - note_on_rec->time;
 
+				// Εαν ο χρόνος μεταξύ τους είναι ελάχιστα μικρός (<=0.1) και οι νότες είναι οι ίδιες (ενεργοποιημένες και στο ίδιο κανάλι), τότε βρήκαμε match
 				if (time_between <= 0.1 && time_between >=0 &&
 					note_on_song->channel == note_on_rec->channel &&
 					note_on_song->key == note_on_rec->key &&
 					note_on_song->velocity > 0 && note_on_rec->velocity > 0) {
 						
-						double note_rec_duration = 0.0;
+						double note_rec_duration = 0.0; // Χρόνος που διαρκεί η ηχογραφημένη νότα του χρήστη
 
-						MidiEvent correct_note_off_rec = NULL; // Copy εκεί που τελειώνει η νότα για σκοπούς auto-correction
+						MidiEvent correct_note_off_rec = NULL; // Copy εως εκεί που τελειώνει η νότα για σκοπούς auto-correction
 
+						// Αφού βρήκα την στιγμή που ενεργοποιήτε μια νότα, συνεχίζω την διάσχηση της λίστας από το σημείο που βρίσκομε, μέχρι να βρω την στιγμή που
+						// απενεργοποιήτε για να πάρω την διάρκεια που είναι ενεργή η νότα
 						for (ListNode temp_node_rec = node_rec;
 							temp_node_rec != LIST_EOF;
 							temp_node_rec = list_next(clip_recorded, temp_node_rec)) {
 								
 								MidiEvent temp_note_on_rec = list_node_value(clip_recorded, temp_node_rec);
 
-								if (temp_note_on_rec->key == note_on_rec->key &&
+								// Εαν η νότα είναι η ίδια με αυτή που ενεργοποιήθηκε αλλά τώρα είναι απενεργοποιημένη, σημαίνει πως βρήκα την χρονική στιγμή που απενεργοποιήτε
+								if (temp_note_on_rec->key == note_on_rec->key && 
 									temp_note_on_rec->channel == note_on_rec->channel &&
 							   		temp_note_on_rec->velocity == 0) {
 										
-										note_rec_duration = temp_note_on_rec->time - note_on_rec->time;
-										correct_note_off_rec = temp_note_on_rec;
+										note_rec_duration = temp_note_on_rec->time - note_on_rec->time; // Χρόνος που είναι ενεργοποιημένη μια νότα που έπαιξε ο χρήστης
+										correct_note_off_rec = temp_note_on_rec; // Αποθηκεύω την στιγμή που τελείωσε η νότα για να πετύχω αργότερα το auto-correction
 										
-										break;
+										break; // Δεν υπάρχει λόγος να συνεχίσω την διάσχηση αφού βρήκα την νότα που ψάχνω για αυτό και τερματίζω την διάσχηση
 									}
 							}
 						
+						// Επαναλαμβάνω ακριβός την ίδια διαδικασία αλλά τώρα για την original νότα του κομματιού,
+						// δηλαδή βρίσκω την διάρκεια που είναι ενεργοποιημένη η νότα στην οποία βρίσκετε το κομμάτι την συγκεκριμένη στιγμή
 						double note_song_duration = 0.0; 
 
 						for (ListNode temp_node_song = node_song;
@@ -346,8 +371,9 @@ static void state_clip_accuracy(State state, Clip clip) {
 									}
 							}
 
-						double time_diff = 0.0;
+						double time_diff = 0.0; // Θα αποθηκεύετε η διαφορά της στιγμής που έπαιξε η ηχογραφημένη νότα με την στιγμή που έπαιξε η original νότα
 
+						// Βρίσκω πιος από τους δύο χρόνους είναι ο μεγαλύτερος και αφαιρώ τον ένα από τον άλλα για να πάρω το time_diff
 						if (note_on_rec->time >= note_on_song->time) {
 
 							time_diff = note_on_rec->time - note_on_song->time;
@@ -357,14 +383,14 @@ static void state_clip_accuracy(State state, Clip clip) {
 							time_diff = note_on_song->time - note_on_rec->time;
 						}
 						
-						double duration_diff = 0.0;
+						double duration_diff = 0.0; // Αντίστιχη μεταβλητή στην οποία θα αποθηκεύετε η διαφορά της διάρκειας των δύο νοτών
 
-						if (note_on_rec->channel == 9 || note_on_song->channel == 9) {
+						if (note_on_rec->channel == 9 || note_on_song->channel == 9) { // Εαν το channel είναι το 9 δηλαδή τα drums που έχουν στιγμιαίο ήχο, δεν υπάρχει η διαφορά της διάρκειας
 							
 							duration_diff = 0.0;
 						}
 						else {
-							if (note_rec_duration >= note_song_duration) {
+							if (note_rec_duration >= note_song_duration) { // Για τα άλλα channels, υπολογίζω το duration_diff με τον ίδιο τρόπο που υπολοόγισα το time_diff
 
 								duration_diff = note_rec_duration - note_song_duration;
 							}
@@ -374,25 +400,28 @@ static void state_clip_accuracy(State state, Clip clip) {
 							}
 						}
 
-						double diff = time_diff + duration_diff;
+						double diff = time_diff + duration_diff; // Συνολική διαφορά χρόνου = άρθροισμα των άλλων δύο χρόνων
 
-						score = score + exp(- ((diff / 0.1) * (diff / 0.1)));
+						score = score + exp(- ((diff / 0.1) * (diff / 0.1))); // Ανανέωση του score με βάση τον τύπο που μου δίνετε
 
+						// Στες δύο επόμενες εντολές εφαρμόζετε το auto-correction
 						note_on_rec->time = note_on_song->time; // Αρχή νότας
 
-						if (correct_note_off_rec != NULL) {							
-							correct_note_off_rec->time = note_on_rec->time + note_song_duration; // Τέλος νότας
+						if (correct_note_off_rec != NULL) {	// Εαν εντοπίστηκε η νότα						
+							correct_note_off_rec->time = note_on_rec->time + note_song_duration; // Τέλος νότας στον σωστό χρόνο (auto-correction)
 						}
 
-						list_remove_next(clip_song, prev_node_song);
-						break;
+						// Διαγράφω τον προηγούμενο κόμβο (νότα) έτσι ώστε οι νότες της ηχογράφησης να μην γίνουν πολλές φορές match με τις νότες του κομματιού
+						list_remove_next(clip_song, prev_node_song); 
+						break; // Για να έφτασα σε αυτό το σημείο σημαίνει πως έγεινε το match μεταξύ των νοτών για αυτό και παω απεφθείας στην επόμενη νότα που ηχογραφήθηκε
 					}
-					prev_node_song = node_song;
+					prev_node_song = node_song; // Το σημείο που αποθηκεύω την προηγούμενη νότα για να την διαγράψω εαν γίνει match με κάποια άλλη
 				}
 			}
 
-	int played_note_on_count = 0;
+	int played_note_on_count = 0; // Ο αριθμός των νοτών που έπεξε ο χρήστης κατά την διάρκεια της ηχογράφησης
 
+	// Διαπερνώ ακόμη μια φορά τις νότες της ηχογράφησης και όσες έχουν ενεργοποιηθεί τις προσθέτω στο played_note_on_count
 	for (ListNode node_rec = list_first(clip_recorded);
 		 node_rec != LIST_EOF;
 		 node_rec = list_next(clip_recorded, node_rec)) {
@@ -404,27 +433,29 @@ static void state_clip_accuracy(State state, Clip clip) {
 			}
 		 }
 
+	// Αποθηκεύω στο max ττο μεγαλύτερο ανάμεσα στον αριθμό με στις νότες που έπαιξε ο χρήστης και στον αριθμό νοτών που έπρεπε να παίξει
 	int max = (song_note_on_count > played_note_on_count) ? song_note_on_count : played_note_on_count;
 
 	double accuracy = 0.0;
 
-	if (score > 0 && (double)max > 0) {
-		accuracy = score / max;
+	if (score > 0 && (double)max > 0) { // Εαν βρείκε τουλάχιστο μια νότα σωστή και ανέβηκε λίγο το score
+		accuracy = score / max; // Υπολογίζω το accuracy με βάση τον τύπο
 	}
-	else {
+	else { // Αλιώς το score και το accurasy είναι 0 για αυτή την προσπάθεια του χρήστη
 		state->info.score = state->info.score + 0.0;
 		state->info.accuracy = state->info.accuracy + 0.0;
 
-		list_destroy(clip_song);
-		return;
+		list_destroy(clip_song); // Καταστροφή λίστας για αποφυγή memory leak 
+		return; // Επιστροφή στο state_update
 	}
 	
-	state->info.score = state->info.score + score;
+	state->info.score = state->info.score + score; // To score που υπολογίστικε σε αυτό τον γύρο προσθέτετε στο συνολικό score του παιχνιδιού
 
-	state->info.accuracy = ((state->info.accuracy * state->recording_index) + accuracy) / (state->recording_index + 1); //(παλαιός μέσος όρος * πλήθος των παλιών clips) + νέο accuracy) / συνολικό πλήθος clips.
+	// Για να υπολογίσω το νέο συνολικό accuracy χωρίς να αλιόσω αυτά των προηγούμενων προσπαθειών κάνω (παλαιός μέσος όρος * πλήθος των παλιών clips) + νέο accuracy) / συνολικό πλήθος clips.
+	state->info.accuracy = ((state->info.accuracy * state->recording_index) + accuracy) / (state->recording_index + 1); 
 
-	list_destroy(clip_song);
-	return;
+	list_destroy(clip_song); // Καταστροφή λίστας για αποφυγή memory leak 
+	return; // Επιστροφή στο state_update
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -571,7 +602,7 @@ void state_update(State state, KeyState ks, double elapsed_time) {
         state->info.time = state->info.time + elapsed_time;								 // η κατάσταση του παιχνιδιού κινείται ένα frame μπροστά (αυξάνετε ο χρόνος κατά μια φορά σαν το παιχνίδι είναι σε κατάσταση pause)
     }
 	if (ks->space == true){ // Εαν το space πατηθεί μια φορά, το παιχνίδι γίνετε paused (γίνετε unpaused όταν ξαναπατηθεί)
-		if (state->info.game_over == true) { // Εαν το παιχνίδι είναι σε game over, τότε το φεύγει από αυτή την καρτάσταση
+		if (state->info.game_over == true) { // Εαν το παιχνίδι είναι σε game over, τότε το φεύγει από αυτή την κατάσταση και γίνετε restart από το level 1
 			state->info.level = 1;
 			state_restart_game(state);
 			state->info.game_over = false;
@@ -580,10 +611,10 @@ void state_update(State state, KeyState ks, double elapsed_time) {
 		state->info.paused = !state->info.paused; // Η αλλαγή κατάστασης του paused είναι σε μορφή μοχλού με βάση το not
 	}
 	
-	if (state->info.time >= state->midi_file->duration &&
+	if (state->info.time >= state->midi_file->duration && // Έλεγχος εαν τελείωσε το παιχνίδι (από τον χρόνο ή από το εαν έχασε ο χρήστης)
 	    state->info.game_over == false) {
-		state_accuracy_level(state, state->info.accuracy);
-		return; // stop because it just restarted
+		state_accuracy_level(state, state->info.accuracy); // Αφού η συγκεκριμένη προσπάθεια του χρήστη τελείωσε, βαθμολογήτε η επίδοση του από το σύστημα
+		return; // τέλος συνάρτησης επειδή το παιχνίδι γίνετε restart και ξεκινάει από την αρχή
 	}
 
 	Vector all_clips = state->clips; // Vector για να έχω πρόσβαση σε όλα τα clips
