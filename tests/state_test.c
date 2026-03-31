@@ -272,6 +272,83 @@ void test_state_update() {
 	state_destroy(state);
 }
 
+void test_scoring_and_auto_correction() {
+	State state = state_create("test.mid");
+	TEST_ASSERT(state != NULL);
+
+	struct key_state ks = empty_key_state();
+
+	ks.space = true;
+	state_update(state, &ks, 0.0);
+	ks.space = false;
+	TEST_ASSERT(!state_info(state)->paused);
+
+	ks.active_keys[12] = 1; ks.changed_keys[12] = 0;
+	ks.active_keys[13] = 1; ks.changed_keys[13] = 0;
+	ks.active_keys[14] = 1; ks.changed_keys[14] = 0;
+
+	state_update(state, &ks, 9.0);
+
+	ks.active_keys[12] = 0; ks.changed_keys[12] = -1;
+	ks.active_keys[13] = 0; ks.changed_keys[13] = -1;
+	ks.active_keys[14] = 0; ks.changed_keys[14] = -1;
+
+	state_update(state, &ks, 9.0);
+
+	TEST_ASSERT(!state_info(state)->paused);
+	TEST_ASSERT(!state_info(state)->game_over);
+	TEST_ASSERT(state_info(state)->time == 18.0);
+	TEST_ASSERT(state_info(state)->accuracy >= 0.0);
+	TEST_ASSERT(state_info(state)->accuracy <= 1.0);
+	TEST_ASSERT(state_info(state)->score >= 0.0);
+	TEST_ASSERT(state_info(state)->level == 1);
+
+	state_destroy(state);
+}
+
+void test_level_progression() {
+	State state_fail_level = state_create("test.mid");
+	TEST_ASSERT(state_fail_level != NULL);
+
+	struct key_state ks = empty_key_state();
+
+	ks.space = true;
+	state_update(state_fail_level, &ks, 0.0);
+	ks.space = false;
+	TEST_ASSERT(!state_info(state_fail_level)->paused);
+
+	state_update(state_fail_level, &ks, 20.0);
+
+	TEST_ASSERT(!state_info(state_fail_level)->paused);
+	TEST_ASSERT(state_info(state_fail_level)->game_over);
+	TEST_ASSERT(state_info(state_fail_level)->time == 20.0);
+	TEST_ASSERT(state_info(state_fail_level)->accuracy == 0.0);
+	TEST_ASSERT(state_info(state_fail_level)->score == 0.0);
+	TEST_ASSERT(state_info(state_fail_level)->level == 1);
+
+	state_destroy(state_fail_level);
+	
+	State state_level_up = state_create("test.mid");
+	TEST_ASSERT(state_level_up != NULL);
+
+	ks = empty_key_state();
+
+	ks.space = true;
+	state_update(state_level_up, &ks, 0.0);
+	ks.space = false;
+	TEST_ASSERT(!state_info(state_level_up)->paused);
+
+	state_info(state_level_up)->accuracy = 1.0;
+
+	state_update(state_level_up, &ks, 20.0);
+
+	TEST_ASSERT(state_info(state_level_up)->paused);
+	TEST_ASSERT(!state_info(state_level_up)->game_over);
+	TEST_ASSERT(state_info(state_level_up)->time == 0.0);
+	TEST_ASSERT(state_info(state_level_up)->level == 2);
+
+	state_destroy(state_level_up);
+}
 
 // Λίστα με όλα τα tests προς εκτέλεση
 TEST_LIST = {
@@ -280,6 +357,8 @@ TEST_LIST = {
 	{ "test_displayed_notes_function", test_displayed_notes_function },
 	{ "test_playback_events_function", test_playback_events_function },
 	{ "test_state_update", test_state_update },
+	{ "test_scoring_and_auto_correction", test_scoring_and_auto_correction },
+	{ "test_level_progression", test_level_progression },
 
 	{ NULL, NULL } // τερματίζουμε τη λίστα με NULL
 };
