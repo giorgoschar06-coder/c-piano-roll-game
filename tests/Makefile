@@ -12,9 +12,11 @@ LDFLAGS = -lm
 
 # Αρχεία .o
 OBJS = state_test.o $(MODULES)/state.o $(LIB)/k08.a $(LIB)/k08midi.a $(LIB)/libraylib.a
+OBJS_alt = state_test.o $(MODULES)/state_alt.o $(LIB)/k08.a $(LIB)/k08midi.a $(LIB)/libraylib.a
 
 # Το εκτελέσιμο πρόγραμμα
 EXEC = state_test
+EXEC_alt = state_alt_test
 
 # Παράμετροι για δοκιμαστική εκτέλεση
 ARGS =
@@ -28,11 +30,19 @@ all: $(EXEC)
 $(EXEC): $(OBJS)
 	$(CC) $(OBJS) -o $(EXEC) $(LDFLAGS)
 
+all_alt: $(EXEC_alt)
+
+$(EXEC_alt): $(OBJS_alt)
+	$(CC) $(OBJS_alt) -o $(EXEC_alt) $(LDFLAGS)
+
 clean:
 	rm -f $(OBJS) $(EXEC)
 
 run: $(EXEC)
 	./$(EXEC) $(ARGS)
+
+run_alt: $(EXEC_alt)
+	./$(EXEC_alt) $(ARGS)
 
 # Για να φτιάξουμε τα k08.a/libraylib.a τρέχουμε το make στο lib directory.
 $(LIB)/%.a:
