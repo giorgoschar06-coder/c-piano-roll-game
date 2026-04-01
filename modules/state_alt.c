@@ -7,6 +7,7 @@
 
 #include "ADTList.h"
 #include "ADTVector.h"
+#include "ADTSet.h" // To ADT set είναι το πιο αποδοτικό για την μέγιστη βελτιστοποίηση του προγράμματος
 #include "k08midi.h"
 #include "state.h"
 
@@ -18,7 +19,8 @@
 struct state {
 	struct state_info info;  // Γενικές πληροφορίες για την κατάσταση του παιχνιδιού
 	MidiFile midi_file;      // Το .mid αρχείο που διαβάσαμε με τη k08midi_file_read
-	List midi_events;        // MIDI events προς αναπαραγωγή
+    Set set_midi_events;     // Οι original νότες του κομματιού
+    Set midi_events;         // MIDI events προς αναπαραγωγή
 	Vector clips;            // Clip προς ηχογράφηση
 	uint recording_index;    // index του τρέχοντος (ή επόμενου) clip
 };
@@ -47,6 +49,48 @@ typedef struct clip_play {
 
 // Bοηθητικές συναρτήσεις /////////////////////////////////////////////////////////////////////////////////
 //
+int compare(Pointer event1, Pointer event2) {
+    MidiEvent first_event = (MidiEvent)event1;
+    MidiEvent second_event = (MidiEvent)event2;
+
+    if (first_event->time > second_event->time) {
+        return 1;
+    }
+    else if (first_event->time < second_event->time) {
+        return -1;
+    }
+    else {
+        
+        if (first_event->channel > second_event->channel) {
+            return 1;
+        }
+        else if (first_event->channel < second_event->channel) {
+            return -1;
+        }
+        else {
+            
+            if (first_event->key > second_event->key) {
+                return 1;
+            }
+            else if (first_event->key < second_event->key) {
+                return -1;
+            }
+            else {
+                 
+                if (first_event->velocity > second_event->velocity) {
+                    return 1;
+                }
+                else if (first_event->velocity < second_event->velocity) {
+                    return -1;
+                }
+                else {
+                    return 0;
+                }
+            }
+        }
+    }
+}
+
 // Δημιουργεί και επιστρέφει ένα σημείο αναπαραγωγής clip
 static ClipPlay create_clip_play(double start, double duration) {
 	ClipPlay play = malloc(sizeof(*play));
@@ -95,7 +139,7 @@ static void append_song_control_events(State state) {
 		if (event->type == MIDI_CONTROL_CHANGE || event->type == MIDI_PROGRAM_CHANGE) {
 			MidiEvent clone = malloc(sizeof(*clone));
 			*clone = *event; // clone
-			list_insert_next(state->midi_events, list_last(state->midi_events), clone);
+			set_insert(state->midi_events, clone); // Απαραίτητη αλλαγή αφού πέρνω πλεον τα events μου και τα βάζω σε Set αντί για Λίστα
 		}
 	}
 }
@@ -471,18 +515,31 @@ State state_create(String midi_file) {
 	state->info.time = 0.0;
 	state->info.level = 1;
 
-	state->midi_file = NULL;
-	state->midi_events = list_create(free);
-
 	state->midi_file = k08midi_file_read(midi_file);
 	assert(state->midi_file != NULL);
+
+    // Ο στόχος είναι να βάλω όλα τα events του midi αρχείου μέσα σε Set αντί για List
+    // για να μπορώ να τα επεξεργαστώ αργότερα στο state_displayed_notes και στο state_playback_events
+    state->set_midi_events = set_create(compare, NULL); // Δημιουργία Set
+
+    List list_midi_events = state->midi_file->events; // List με όλα τα events του midi αρχείου
+
+    // Διάσχηση όλων των event της λίστας για να τα μεταφέρω στο νεό μου Set
+    for (ListNode node = list_first(list_midi_events);
+         node != LIST_EOF;
+         node = list_next(list_midi_events, node)) {
+
+            MidiEvent set_event = list_node_value(list_midi_events, node); // Παίρνω το event σε μορφή Set
+
+            set_insert(state->set_midi_events, set_event); // Μεταφορά event στο Set
+         }
 
 	create_clips(state);
 	assert(vector_size(state->clips) > 0);
 	state->recording_index = 0;
 
-	list_destroy(state->midi_events);
-	state->midi_events = list_create(free);
+	//list_destroy(state->midi_events);
+	state->midi_events = set_create(compare, free); // Εδώ που θα τοπεθετηθούν τα MIDI events προς αναπαραφωφή αλλά τώρα σε μορφή Set
 	append_song_control_events(state);
 
 	return state;
@@ -539,16 +596,32 @@ List state_displayed_notes(State state, double time_window) {
 	}
 	
 	List displayed_notes = list_create(NULL); // Δημιουργία λίστας για να εισαχθούν οι νότες σε αύξουσα σειρά
-	
-	List list = state->midi_file->events; // Ανοίγω την λίστα που βρίσκονται όλα τα events για να έχω πρόσβαση στα MIDI_NOTES
+    
+    // Με το Set μπορώ να έχω άμεση πρόσβαση σε οποιοδήποτε σημείο των midi_events χωρίς να ανατρέχω κάθε φορά όλο το αρχείο από την αρχή
+    // με αποτέλεσμα να είναι πιο βελτιστοποιημένη επιλογή από τα Lists ειδικά σε μεγάλα κομμάτια
+	Set set = state->set_midi_events; // Ανοίγω το Set που βρίσκονται όλα τα events για να έχω πρόσβαση στα MIDI_NOTES
 	
 	int channel_playing_now = state_playing_channel(state); // Παίνω το κανάλι που βρίσκομαι τώρα για έλεγχο ορθότητας αργότερα
 	
-	for (ListNode node = list_first(list); // Διαπερνώ την λίστα με όλα τα events για να πάρω όλα τα MIDI_NOTES και να τα
-		node != LIST_EOF;				   // εισάγω ταξινομημένα στην δικιά μου λίστα
-		node = list_next(list, node)) {
+    // Ένα custom event που θα το χρησιμοποιήσω για να ξέρω από που θα αρχίσω στο set με όλα τα events.
+    // Με αυτό τον τρόπο δεν χρειάζετε να διατρέχω την λίστα κάθε φορά από την αρχή για αυτό και το πρόγραμμα έτσι γίνετε πιο αποδοτικό σε μεγάλα κομμάτια
+    MidiEvent temp = malloc(sizeof(struct midi_event)); 
+    temp->time = time_now;
+    temp->channel = -1;
+    temp->key = -1;
+    temp->velocity = -1;
 
-		MidiEvent event = list_node_value(list, node);
+    // To εισάγω προσωρινά στο set για να πάει και να τοποθετηθεί ακριβός στο σημείο που πρέπει με βάση το time_now (ένα node πριν από αυτό που ψάχνω)
+    set_insert(set, temp);
+
+    // Βρίσκει το custom event που μόλις πέρασα στο set και βρίσκω το ένα node πριν το σημείο εκκίνησης
+    SetNode node_temp = set_find_node(set, temp);
+
+	for (SetNode node = set_next(set, node_temp); // Διαπερνώ το set με όλα τα events από το σημείο που θέλω (με βάση τον χρόνο), για να πάρω όλα τα MIDI_NOTES και να τα
+		node != SET_EOF;				   // εισάγω ταξινομημένα στην δικιά μου λίστα
+		node = set_next(set, node)) {
+
+		MidiEvent event = set_node_value(set, node);
 
 		if (event->time <= time_at_end) { // Έλεγχος για να μην ξεπεράσω το χρονικό όριο του time_window
 			// Όλοι οι απαραίτητοι ελέγχοι για εγκυρότητα των στοιχείων των events + νοτών και εισαγωγή νοτών στην λίστα σε αύξουσα σειρά με βάση τον χρόνο (event->time >= time_now)
@@ -562,6 +635,14 @@ List state_displayed_notes(State state, double time_window) {
 		break;
 	}
 
+    // Σταματώ προσωρινά τα αυτόματα free που κάνει το set για να διαγράψω τον προσωρινό κόμβο temp που πρόσθεσα πιο πάνω,
+    // έτσι ώστε να μην αλλοιωθεί το κομμάτι και αργότερα  τα επαναφέρω
+    DestroyFunc destroy = set_set_destroy_value(set, NULL);
+    set_remove(set, temp);
+    set_set_destroy_value(set, destroy);
+
+    free(temp); // Για αποφυγή memory leak
+
 	return displayed_notes; // Επιστροφή ολοκληρωμένης λίστας
 }
 
@@ -574,22 +655,44 @@ List state_playback_events(State state, double since) {
 
 	List playback_events = list_create(NULL); // Δημιουργία λίστας για να μπουν τα events ταξινομημένα 
 
-	List list = state->midi_events; // Δημιουργία λίστας με όλα τα events του τραγουδιού
+	Set set = state->midi_events; // Ανοίγω το Set που βρίσκονται όλα τα events για να έχω πρόσβαση στα MIDI_NOTES
 
-	for (ListNode node = list_first(list); // Διάσχηση όλων των events της λίστας για να κρατήσω αυτά που συμβαδίζουν με τα χρονικά μου πλαίσια
-		 node != LIST_EOF;
-		 node = list_next(list, node)) {
+    // Ένα custom event που θα το χρησιμοποιήσω για να ξέρω από που θα αρχίσω στο set με όλα τα events (time_since).
+    // Με αυτό τον τρόπο δεν χρειάζετε να διατρέχω την λίστα κάθε φορά από την αρχή για αυτό και το πρόγραμμα έτσι γίνετε πιο αποδοτικό σε μεγάλα κομμάτια
+    MidiEvent temp = malloc(sizeof(struct midi_event)); 
+    temp->time = time_since;
+    temp->channel = -1;
+    temp->key = -1;
+    temp->velocity = -1;
 
-			MidiEvent event = list_node_value(list, node);
+    // To εισάγω προσωρινά στο set για να πάει και να τοποθετηθεί ακριβός στο σημείο που πρέπει με βάση το time_now (ένα node πριν από αυτό που ψάχνω)
+    set_insert(set, temp);
 
-			// Εαν το event είναι μεταξύ του χρόνου since και του χρόνου τώρα, το εισάγω στην λίστα σε μη φθίνουσα σειρά με βάση τον χρόνο
-			if (event->time >= time_since && event->time <= time_now) {
-				list_insert_next(playback_events, list_last(playback_events), event);
-			}
+    // Βρίσκει το custom event που μόλις πέρασα στο set και βρίσκω το ένα node πριν το σημείο εκκίνησης
+    SetNode node_temp = set_find_node(set, temp);
+
+    for (SetNode node = set_next(set, node_temp);  // Διαπερνώ το set με όλα τα events από το σημείο που θέλω (με βάση τον time_since), για να πάρω όλα τα MIDI_NOTES και να τα
+		node != SET_EOF;				   // εισάγω ταξινομημένα στην δικιά μου λίστα
+		node = set_next(set, node)) {
+
+		MidiEvent event = set_node_value(set, node);
+
+		// Εαν το event είναι μεταξύ του χρόνου since και του χρόνου τώρα, το εισάγω στην λίστα σε μη φθίνουσα σειρά με βάση τον χρόνο
+		if (event->time >= time_since && event->time <= time_now) {
+			list_insert_next(playback_events, list_last(playback_events), event);
+		}
 			else if (event->time > time_now) { // Εαν ο χρόνος βγει εκτός ορίων, τερματίζω την διάσχηση
-				break;
-			}
-		 }
+			break;
+		}
+	}
+
+    // Σταματώ προσωρινά τα αυτόματα free που κάνει το set για να διαγράψω τον προσωρινό κόμβο temp που πρόσθεσα πιο πάνω,
+    // έτσι ώστε να μην αλλοιωθεί το κομμάτι και αργότερα  τα επαναφέρω
+    DestroyFunc destroy = set_set_destroy_value(set, NULL);
+    set_remove(set, temp);
+    set_set_destroy_value(set, destroy);
+
+    free(temp); // Για αποφυγή memory leak
 
 	return playback_events; // Επιστροφή ολοκληρομένης λίστας
 }
@@ -701,7 +804,7 @@ void state_update(State state, KeyState ks, double elapsed_time) {
 										new_event->key = event_now->key;
 										new_event->velocity = event_now->velocity;
 
-										list_insert_next(state->midi_events, list_last(state->midi_events), new_event); // Εισάγω το νέο event στο τέλος της λίστας με τα υπόλοιπα midi events
+										set_insert(state->midi_events, new_event); // Εισάγω το νέο event στο τέλος του set με τα υπόλοιπα midi events
 									}
 								}	
 							// Εδώ γίνετε το όλο loop που προσθέτω τον χρόνο του clip στον χρόνο που βρίσκετε το loop για να ξαναπαίξει
@@ -720,7 +823,9 @@ void state_destroy(State state) {
 
 	k08midi_file_destroy(state->midi_file); // Καταστροφή midi αρχείου
 
-	list_destroy(state->midi_events); // Καταστροφή όλων των midi events
+    set_destroy(state->set_midi_events); // Καταστροφή όλων των νοτών του κομματιού
+    
+	set_destroy(state->midi_events); // Καταστροφή όλων των midi events
 
 	vector_destroy(state->clips); // Καταστροφή όλων των clips
 
