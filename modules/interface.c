@@ -28,7 +28,7 @@ void interface_draw_frame(State state) {
 	DrawFPS(SCREEN_WIDTH - 80, 0);
 
     int piano_keys = 128;
-    int piano_keys_height = 50;
+    int piano_keys_height = 150;
 
     int piano_keys_start_y = SCREEN_HEIGHT - piano_keys_height;
 
