@@ -538,7 +538,6 @@ State state_create(String midi_file) {
 	assert(vector_size(state->clips) > 0);
 	state->recording_index = 0;
 
-	//list_destroy(state->midi_events);
 	state->midi_events = set_create(compare, free); // Εδώ που θα τοπεθετηθούν τα MIDI events προς αναπαραφωφή αλλά τώρα σε μορφή Set
 	append_song_control_events(state);
 
