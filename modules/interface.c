@@ -42,16 +42,15 @@ void interface_draw_frame(State state) {
 		
 		DrawRectangleLines(x, piano_keys_start_y, piano_keys_width, piano_keys_height, BLACK);
 		
-		if (k == 0 || k % 12 == 0) {
-			for (int i = 0 ; i < 12 ; i++) {
-				if (i == 1 || i == 3 || i == 6 || i == 8 || i == 10) {
-					DrawRectangle(x, piano_keys_start_y, piano_keys_width, piano_keys_height - 50, BLACK);
+		int key_major = k % 12;
+	 
+		if (key_major == 1 || key_major == 3 || key_major == 6 || key_major == 8 || key_major == 10) {
+		DrawRectangle(x, piano_keys_start_y, piano_keys_width, piano_keys_height - 50, BLACK);
 	
-					DrawRectangleLines(x, piano_keys_start_y, piano_keys_width, piano_keys_height - 50, BLACK);
-				}
-			}
+		DrawRectangleLines(x, piano_keys_start_y, piano_keys_width, piano_keys_height - 50, BLACK);
 		}
-    }
+	}
+		
 	// Αν το παιχνίδι έχει τελειώσει, σχεδιάζουμε το μήνυμα για να ξαναρχίσει
 	//if (!state->playing) {
 	//	DrawText(
