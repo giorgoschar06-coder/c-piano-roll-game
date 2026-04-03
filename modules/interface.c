@@ -37,7 +37,11 @@ void interface_draw_frame(State state) {
         int x = k * SCREEN_WIDTH / piano_keys;
         int piano_keys_next_x = (k + 1) * SCREEN_WIDTH / piano_keys;
         int piano_keys_width = piano_keys_next_x - x;
-    
+		
+		DrawRectangle(x, piano_keys_start_y, piano_keys_width, piano_keys_height, RAYWHITE);
+		
+		DrawRectangleLines(x, piano_keys_start_y, piano_keys_width, piano_keys_height, BLACK);
+		
 		if (k == 0 || k % 12 == 0) {
 			for (int i = 0 ; i < 12 ; i++) {
 				if (i == 1 || i == 3 || i == 6 || i == 8 || i == 10) {
@@ -47,10 +51,6 @@ void interface_draw_frame(State state) {
 				}
 			}
 		}
-
-    DrawRectangle(x, piano_keys_start_y, piano_keys_width, piano_keys_height, RAYWHITE);
-
-    DrawRectangleLines(x, piano_keys_start_y, piano_keys_width, piano_keys_height, BLACK);
     }
 	// Αν το παιχνίδι έχει τελειώσει, σχεδιάζουμε το μήνυμα για να ξαναρχίσει
 	//if (!state->playing) {
