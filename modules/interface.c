@@ -144,10 +144,10 @@ void interface_draw_frame(State state) {
 	DrawRectangle(0 ,0, GetScreenWidth(), 150, DARKGRAY); // Για να κρύψω τις νότες έτσι ώστε να μην φαίνοντε πριν να αρχίσει το παιχνίδι
 
 	// Σχεδιάζουμε το σκορ και το FPS counter
-	DrawText(TextFormat("Time: %0.0f", info->time), 20, 20, 40, GOLD);
-	DrawText(TextFormat("Score: %0.0f", info->score), 320, 20, 40, GOLD);
-	DrawText(TextFormat("Accuracy: %0.0f", info->accuracy), 620, 20, 40, GOLD);
-	DrawText(TextFormat("Level: %d", info->level), 920, 20, 40, GOLD);
+	DrawText(TextFormat("Time: %.2f", info->time), 20, 20, 40, GOLD);
+	DrawText(TextFormat("Score: %.2f", info->score), 320, 20, 40, GOLD);
+	DrawText(TextFormat("Accuracy: %.2f", info->accuracy), 620, 20, 40, GOLD);
+	DrawText(TextFormat("Level: %d", info->level), 1020, 20, 40, GOLD);
 	DrawFPS(SCREEN_WIDTH - 80, 0);
 
 	// Αν το παιχνίδι έχει τελειώσει, σχεδιάζουμε το μήνυμα για να ξαναρχίσει
