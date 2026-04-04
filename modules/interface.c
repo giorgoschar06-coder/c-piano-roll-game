@@ -63,11 +63,20 @@ void interface_draw_frame(State state) {
 
 			MidiEvent note = list_node_value(notes_falling, node);
 
+			if (note->velocity == 0) {
+				continue;
+			}
+
+			double time_diff = note->time - info->time;
+			
+			if (time_diff < -0.2) { // Για να μην ξαναεμφανιστεί η νότα όταν μπει στο loop 
+				continue;
+			}
+
 			int note_key = note->key;
 			int x = note_key * SCREEN_WIDTH / piano_keys;
 			int note_width = (note_key + 1) * SCREEN_WIDTH / piano_keys - x;
 
-			double time_diff = note->time - info->time;
 			int y = piano_keys_start_y - (int)((time_diff / time_window) * piano_keys_start_y);
 
 			int channel = (int)note->channel;
