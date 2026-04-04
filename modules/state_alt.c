@@ -600,8 +600,6 @@ List state_displayed_notes(State state, double time_window) {
 		return displayed_notes;
 	}
 
-	Clip clip_now = vector_get_at(state->clips, state->recording_index);
-
     // Με το Set μπορώ να έχω άμεση πρόσβαση σε οποιοδήποτε σημείο των midi_events χωρίς να ανατρέχω κάθε φορά όλο το αρχείο από την αρχή
     // με αποτέλεσμα να είναι πιο βελτιστοποιημένη επιλογή από τα Lists ειδικά σε μεγάλα κομμάτια
 	Set set = state->set_midi_events; // Ανοίγω το Set που βρίσκονται όλα τα events για να έχω πρόσβαση στα MIDI_NOTES
@@ -626,15 +624,27 @@ List state_displayed_notes(State state, double time_window) {
 
 		MidiEvent event = set_node_value(set, node);
 
-		if (event->velocity > 0 && event->channel == clip_now->channel) { // Εαν παίζετε νότα και είναι στο σωστό κανάλι
-			if (event->time >= clip_now->start && event->time <= (clip_now->start + clip_now->duration)) { // Εαν ο χρόνος που παίζετε η νότα είναι μέσα στα όρια του clip
-				if (event->time >= time_now && event->time <= time_at_end) { // Εαν η νότα είναι στα όρια του χρόνου με βάση το time_window
+		if (event->velocity > 0 && event->type == MIDI_NOTE) { // Εαν παίζετε νότα και είναι στο σωστό κανάλι
+
+			if (event->time >= time_now && event->time <= time_at_end) { // Εαν η νότα είναι στα όρια του χρόνου με βάση το time_window
 					if((uint8_t)event->key >= 0 && (uint8_t)event->key <= 127) { // Εαν παίζετε κανονική νότα
-					list_insert_next(displayed_notes, list_last(displayed_notes), event); // Για να μπουν όλες οι νότες στην σωστή σειρά (ταξινομημένες) προσθέτω πάντα από το τέλος
+					
+						// Ελέγχω εαν στον χρονικό χρόνο που βρίσκομαι ξεκινήση άλλα clip να πάιζει για να ξεκινήσω να εμφανίζω και τες δικιές του νότες
+						for (int k = state->recording_index; 
+							 k < vector_size(state->clips);
+							 k++) {
+								Clip clip_now = vector_get_at(state->clips, k);
+								
+								if (event->channel == clip_now->channel &&
+									event->time >= clip_now->start &&
+									event->time <= (clip_now->start + clip_now->duration)) {
+										list_insert_next(displayed_notes, list_last(displayed_notes), event); // Για να μπουν όλες οι νότες στην σωστή σειρά (ταξινομημένες) προσθέτω πάντα από το τέλος
+										break;
+									}
+							 }
 					}
 				}
 			}
-		}
 	}
 
     // Σταματώ προσωρινά τα αυτόματα free που κάνει το set για να διαγράψω τον προσωρινό κόμβο temp που πρόσθεσα πιο πάνω,
