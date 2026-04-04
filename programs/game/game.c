@@ -61,9 +61,6 @@ void update_and_draw() {
 		 node != LIST_EOF;
 		 node = list_next(next_event, node)) {
 			MidiEvent event = list_node_value(next_event, node);
-			if (event->time > elapsed_seconds) {
-                break;
-            }
             dispatch_event(event);
 		 }
 
