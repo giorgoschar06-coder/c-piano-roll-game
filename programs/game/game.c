@@ -12,7 +12,24 @@ void update_and_draw() {
 
 	struct key_state key = {0};
 	
+	if (IsKeyPressed(KEY_SPACE)) {
+            key.space = true;
+        }
+	
+	if (IsKeyPressed(KEY_N)) {
+			key.n = true;
+		}
+
 	state_update(state, &key, elapsed_seconds);
+	
+	if (key.space == true) {
+		key.space = false;
+	}
+
+	if (key.n == true) {
+		key.n = false;
+	}
+
 	interface_draw_frame(state);
 }
 
