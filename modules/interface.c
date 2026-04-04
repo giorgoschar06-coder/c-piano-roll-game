@@ -70,9 +70,70 @@ void interface_draw_frame(State state) {
 			double time_diff = note->time - info->time;
 			int y = piano_keys_start_y - (int)((time_diff / time_window) * piano_keys_start_y);
 
-			DrawRectangle(x, y, note_width, 30, MAROON);
+			int channel = (int)note->channel;
 
-			DrawRectangleLines(x, y, note_width, 30, GOLD);
+			switch (channel) {
+				case 0:
+				DrawRectangle(x, y - 30, note_width, 30, BEIGE);
+				DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
+				break;
+
+				case 1:
+				DrawRectangle(x, y - 30, note_width, 30, YELLOW);
+				DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
+				break;
+
+				case 2:
+				DrawRectangle(x, y - 30, note_width, 30, RED);
+				DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
+				break;
+
+				case 3:
+				DrawRectangle(x, y - 30, note_width, 30, ORANGE);
+				DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
+				break;
+
+				case 4:
+				DrawRectangle(x, y - 30, note_width, 30, GREEN);
+				DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
+				break;
+
+				case 5:
+				DrawRectangle(x, y - 30, note_width, 30, BLUE);
+				DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
+				break;
+
+				case 6:
+				DrawRectangle(x, y - 30, note_width, 30, VIOLET);
+				DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
+				break;
+
+				case 7:
+				DrawRectangle(x, y - 30, note_width, 30, SKYBLUE);
+				DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
+				break;
+
+				case 8:
+				DrawRectangle(x, y - 30, note_width, 30, PINK);
+				DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
+				break;
+
+				case 9:
+				DrawRectangle(x, y - 30, note_width, 30, BROWN);
+				DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
+				break;
+
+				case 10:
+				DrawRectangle(x, y - 30, note_width, 30, MAROON);
+				DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
+				break;
+
+				default:
+				DrawRectangle(x, y - 30, note_width, 30, LIME);
+				DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
+				break;
+			}
+
 		 }
 
 	// Αν το παιχνίδι έχει τελειώσει, σχεδιάζουμε το μήνυμα για να ξαναρχίσει
