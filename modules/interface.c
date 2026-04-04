@@ -145,9 +145,9 @@ void interface_draw_frame(State state) {
 
 	// Σχεδιάζουμε το σκορ και το FPS counter
 	DrawText(TextFormat("Time: %0.0f", info->time), 20, 20, 40, GOLD);
-	DrawText(TextFormat("Score: %0.0f", info->score), 40, 40, 40, GOLD);
-	DrawText(TextFormat("Accuracy: %0.0f", info->accuracy), 60, 60, 40, GOLD);
-	DrawText(TextFormat("Level: %d", info->level), 80, 80, 40, GOLD);
+	DrawText(TextFormat("Score: %0.0f", info->score), 220, 20, 40, GOLD);
+	DrawText(TextFormat("Accuracy: %0.0f", info->accuracy), 420, 20, 40, GOLD);
+	DrawText(TextFormat("Level: %d", info->level), 620, 20, 40, GOLD);
 	DrawFPS(SCREEN_WIDTH - 80, 0);
 
 	// Αν το παιχνίδι έχει τελειώσει, σχεδιάζουμε το μήνυμα για να ξαναρχίσει
