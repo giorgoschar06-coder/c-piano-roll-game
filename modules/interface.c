@@ -23,8 +23,10 @@ void interface_draw_frame(State state) {
 	// Καθαρισμός, θα τα σχεδιάσουμε όλα από την αρχή
 	ClearBackground(DARKGRAY);
 
+	StateInfo info = state_info(state); // Παίτνω το info του παιχνιδιού
+
 	// Σχεδιάζουμε το σκορ και το FPS counter
-	//DrawText(TextFormat("%04i", state->score), 20, 20, 40, GRAY);
+	DrawText(TextFormat("%0.0f", info->score), 20, 20, 40, GOLD);
 	DrawFPS(SCREEN_WIDTH - 80, 0);
 
     int piano_keys = 128;
@@ -45,18 +47,42 @@ void interface_draw_frame(State state) {
 		int key_major = k % 12;
 	 
 		if (key_major == 1 || key_major == 3 || key_major == 6 || key_major == 8 || key_major == 10) {
-		DrawRectangle(x, piano_keys_start_y, piano_keys_width, piano_keys_height - 50, BLACK);
+		DrawRectangle(x, piano_keys_start_y, piano_keys_width, piano_keys_height - 75, BLACK);
 	
-		DrawRectangleLines(x, piano_keys_start_y, piano_keys_width, piano_keys_height - 50, BLACK);
+		DrawRectangleLines(x, piano_keys_start_y, piano_keys_width, piano_keys_height - 75, BLACK);
 		}
 	}
+
+	double time_window = 5.0; // Χρόνος που έχουν οι νότες να εμφανιστούν στον χρήστη μέχρι να πέσουν στο πιάνο
 		
+	List notes_falling = state_displayed_notes(state, time_window); // Λίστα με τις νότες που θα εμφανιστούν μέχρι το time_window
+
+	for (ListNode node = list_first(notes_falling);
+		 node != LIST_EOF;
+		 node = list_next(notes_falling, node)) {
+
+			MidiEvent note = list_node_value(notes_falling, node);
+
+			int note_key = note->key;
+			int x = note_key * SCREEN_WIDTH / piano_keys;
+			int note_width = (note_key + 1) * SCREEN_WIDTH / piano_keys - x;
+
+			double time_diff = note->time - info->time;
+			int y = piano_keys_start_y - (int)((time_diff / time_window) * piano_keys_start_y);
+
+			DrawRectangle(x, y, note_width, 30, MAROON);
+
+			DrawRectangleLines(x, y, note_width, 30, GOLD);
+		 }
+
 	// Αν το παιχνίδι έχει τελειώσει, σχεδιάζουμε το μήνυμα για να ξαναρχίσει
-	//if (!state->playing) {
-	//	DrawText(
-	//		"PRESS [ENTER] TO PLAY AGAIN",
-	//		 GetScreenWidth() / 2 - MeasureText("PRESS [ENTER] TO PLAY AGAIN", 20) / 2,
-	//}
+	if (info->game_over == true) {
+		DrawText(
+			"PRESS [ENTER] TO PLAY AGAIN",
+			 GetScreenWidth() / 2 - MeasureText("PRESS [ENTER] TO PLAY AGAIN", 20) / 2,
+			 GetScreenHeight() / 2 - 50, 20, RED
+		);
+	}
 
 	EndDrawing();
 }
