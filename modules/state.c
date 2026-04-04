@@ -540,6 +540,10 @@ List state_displayed_notes(State state, double time_window) {
 	
 	List displayed_notes = list_create(NULL); // Δημιουργία λίστας για να εισαχθούν οι νότες σε αύξουσα σειρά
 	
+	if (state->recording_index >= vector_size(state->clips)) { // Έλεγχος για να μην ξαναεμφανίζονται οι ίδιες νότες όταν θα μπουν στο loop
+		return displayed_notes;
+	}
+
 	List list = state->midi_file->events; // Ανοίγω την λίστα που βρίσκονται όλα τα events για να έχω πρόσβαση στα MIDI_NOTES
 	
 	int channel_playing_now = state_playing_channel(state); // Παίνω το κανάλι που βρίσκομαι τώρα για έλεγχο ορθότητας αργότερα

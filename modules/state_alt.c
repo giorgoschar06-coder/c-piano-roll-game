@@ -596,6 +596,10 @@ List state_displayed_notes(State state, double time_window) {
 	
 	List displayed_notes = list_create(NULL); // Δημιουργία λίστας για να εισαχθούν οι νότες σε αύξουσα σειρά
     
+	if (state->recording_index >= vector_size(state->clips)) { // Έλεγχος για να μην ξαναεμφανίζονται οι ίδιες νότες όταν θα μπουν στο loop
+		return displayed_notes;
+	}
+
     // Με το Set μπορώ να έχω άμεση πρόσβαση σε οποιοδήποτε σημείο των midi_events χωρίς να ανατρέχω κάθε φορά όλο το αρχείο από την αρχή
     // με αποτέλεσμα να είναι πιο βελτιστοποιημένη επιλογή από τα Lists ειδικά σε μεγάλα κομμάτια
 	Set set = state->set_midi_events; // Ανοίγω το Set που βρίσκονται όλα τα events για να έχω πρόσβαση στα MIDI_NOTES
