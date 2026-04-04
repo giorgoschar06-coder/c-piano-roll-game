@@ -586,7 +586,7 @@ List state_playback_events(State state, double since) {
 
 	List playback_events = list_create(NULL); // Δημιουργία λίστας για να μπουν τα events ταξινομημένα 
 
-	List list = state->midi_events; // Δημιουργία λίστας με όλα τα events του τραγουδιού
+	List list = state->midi_file->events; // Δημιουργία λίστας με όλα τα events του τραγουδιού
 
 	for (ListNode node = list_first(list); // Διάσχηση όλων των events της λίστας για να κρατήσω αυτά που συμβαδίζουν με τα χρονικά μου πλαίσια
 		 node != LIST_EOF;
