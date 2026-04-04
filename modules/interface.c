@@ -25,10 +25,6 @@ void interface_draw_frame(State state) {
 
 	StateInfo info = state_info(state); // Παίτνω το info του παιχνιδιού
 
-	// Σχεδιάζουμε το σκορ και το FPS counter
-	DrawText(TextFormat("%0.0f", info->score), 20, 20, 40, GOLD);
-	DrawFPS(SCREEN_WIDTH - 80, 0);
-
     int piano_keys = 128;
     int piano_keys_height = 150;
 
@@ -146,6 +142,13 @@ void interface_draw_frame(State state) {
 		 }
 
 	DrawRectangle(0 ,0, GetScreenWidth(), 150, DARKGRAY); // Για να κρύψω τις νότες έτσι ώστε να μην φαίνοντε πριν να αρχίσει το παιχνίδι
+
+	// Σχεδιάζουμε το σκορ και το FPS counter
+	DrawText(TextFormat("Time: %0.0f", info->time), 20, 20, 40, GOLD);
+	DrawText(TextFormat("Score: %0.0f", info->score), 40, 20, 40, GOLD);
+	DrawText(TextFormat("Accuracy: %0.0f", info->accuracy), 60, 20, 40, GOLD);
+	DrawText(TextFormat("Level: %d", info->level), 80, 20, 40, GOLD);
+	DrawFPS(SCREEN_WIDTH - 80, 0);
 
 	// Αν το παιχνίδι έχει τελειώσει, σχεδιάζουμε το μήνυμα για να ξαναρχίσει
 	if (info->game_over == true) {

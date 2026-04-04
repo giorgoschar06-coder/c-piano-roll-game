@@ -53,6 +53,38 @@ void update_and_draw() {
 			key.n = true;
 		}
 
+	int keys_to_notes [][2] = {
+		{KEY_A, 60}, {KEY_W, 61}, {KEY_S, 62},
+		{KEY_E, 63}, {KEY_D, 64}, {KEY_F, 65},
+		{KEY_T, 66}, {KEY_G, 67}, {KEY_Y, 68},
+		{KEY_H, 69}, {KEY_U, 70}, {KEY_J, 71},
+		{KEY_K, 72}, {KEY_O, 73}, {KEY_L, 74},
+		{KEY_P, 75}, {KEY_SEMICOLON, 76}, {KEY_APOSTROPHE, 77},
+		{KEY_RIGHT_BRACKET, 78}, {KEY_BACKSLASH, 79},
+	};
+
+	int num_keys = sizeof(keys_to_notes) / sizeof(keys_to_notes[0]);
+
+	int channel = state_playing_channel(state);
+
+	for (int k = 0 ; k < num_keys ; k++) {
+		int key_now = keys_to_notes[k][0];
+		int note = keys_to_notes[k][1];
+
+		if (IsKeyDown(key_now)) {
+			key.active_keys[note] = 127;
+		}
+
+		if (IsKeyPressed(key_now)) {
+			key.changed_keys[note] = 127;
+			k08midi_synth_note(channel, note, 127);
+		}
+
+		if (IsKeyReleased(key_now)) {
+			key.changed_keys[note] = 0;
+			k08midi_synth_note(channel, note, 127);
+		}
+	}
 	state_update(state, &key, elapsed_seconds);
 	
 	List next_event = state_playback_events(state, elapsed_seconds);
