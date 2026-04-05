@@ -106,6 +106,7 @@ void update_and_draw() {
 			k08midi_synth_note(channel, note, 0);
 		}
 	}
+	
 	state_update(state, &key, elapsed_seconds);
 	
 	List next_event = state_playback_events(state, elapsed_seconds);
@@ -117,12 +118,15 @@ void update_and_draw() {
             dispatch_event(event);
 		 }
 
+	StateInfo info = state_info(state);
+
 	//  Reset αν πατηθεί R
-	//if (IsKeyPressed(KEY_R) || next_event == LIST_EOF) {
-    //	       elapsed_seconds = 0.0;
-    //        next_event = list_first(next_event);
-    //        k08midi_synth_note_off_all();
-    //    }
+	if (IsKeyPressed(KEY_R) || (IsKeyPressed(KEY_ENTER) && info->game_over == true)) {
+            k08midi_synth_note_off_all();
+			state_destroy(state);
+			state_create("./assets/back-to-black.mid");
+			GetFrameTime();
+        }
 
 	list_destroy(next_event);
 

@@ -204,11 +204,22 @@ void interface_draw_frame(State state) {
 	// Αν το παιχνίδι έχει τελειώσει, σχεδιάζουμε το μήνυμα για να ξαναρχίσει
 	if (info->game_over == true) {
 		DrawText(
-			"PRESS [ENTER] TO PLAY AGAIN",
-			 GetScreenWidth() / 2 - MeasureText("PRESS [ENTER] TO PLAY AGAIN", 20) / 2,
+			"GAME OVER \n PRESS [R] TO PLAY AGAIN",
+			 GetScreenWidth() / 2 - MeasureText("GAME OVER \n PRESS [ENTER] TO PLAY AGAIN", 20) / 2,
 			 GetScreenHeight() / 2 - 50, 20, RED
 		);
 	}
 
+	if (info->paused == true) {
+		DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.08f));
+
+		int x_center = GetScreenWidth() / 2;
+		int y_center = GetScreenHeight() / 2;
+
+		DrawText("PRESS [SPACE] TO PLAY / PAUSE GAME", x_center, y_center - 20, 20, GOLD);
+		DrawText("PRESS [N] TO MOVE TO THE NEXT FRAME", x_center, y_center - 40, 20, GOLD);
+		DrawText("PRESS [R] TO RESTART GAME", x_center, y_center - 20, 60, GOLD);
+
+	}
 	EndDrawing();
 }
