@@ -54,22 +54,43 @@ void update_and_draw() {
 		}
 
 	int keys_to_notes [][2] = {
-		{KEY_A, 60}, {KEY_W, 61}, {KEY_S, 62},
-		{KEY_E, 63}, {KEY_D, 64}, {KEY_F, 65},
-		{KEY_T, 66}, {KEY_G, 67}, {KEY_Y, 68},
-		{KEY_H, 69}, {KEY_U, 70}, {KEY_J, 71},
-		{KEY_K, 72}, {KEY_O, 73}, {KEY_L, 74},
-		{KEY_P, 75}, {KEY_SEMICOLON, 76}, {KEY_APOSTROPHE, 77},
-		{KEY_RIGHT_BRACKET, 78}, {KEY_BACKSLASH, 79},
+		{KEY_A, 0}, {KEY_W, 1}, {KEY_S, 2},
+		{KEY_E, 3}, {KEY_D, 4}, {KEY_F, 5},
+		{KEY_T, 6}, {KEY_G, 7}, {KEY_Y, 8},
+		{KEY_H, 9}, {KEY_U, 10}, {KEY_J, 11},
+		{KEY_K, 12}, {KEY_O, 13}, {KEY_L, 14},
+		{KEY_P, 15}, {KEY_SEMICOLON, 16}, {KEY_APOSTROPHE, 17},
+		{KEY_RIGHT_BRACKET, 18}, {KEY_BACKSLASH, 19},
 	};
 
 	int num_keys = sizeof(keys_to_notes) / sizeof(keys_to_notes[0]);
+
+	static int note_base = 60;
+
+	List list = state_displayed_notes(state, 3.0);
+
+	if (list_size(list) > 0) {
+		int min = 127;
+
+		for (ListNode node = list_first(list);
+			 node != LIST_EOF;
+			 node = list_next(list, node)) {
+				MidiEvent event = list_node_value(list, node);
+
+				if ((int)event->key < min) {
+					min = event->key;
+				}
+			 }
+		if (min < 127) {
+			note_base = (min / 12) * 12; // Βρίσκω σε ποια οκτάβα να ενεργοποιήσω τα πλήκρα
+		}
+	}
 
 	int channel = state_playing_channel(state);
 
 	for (int k = 0 ; k < num_keys ; k++) {
 		int key_now = keys_to_notes[k][0];
-		int note = keys_to_notes[k][1];
+		int note = keys_to_notes[k][1] + note_base;
 
 		if (IsKeyDown(key_now)) {
 			key.active_keys[note] = 127;
@@ -82,7 +103,7 @@ void update_and_draw() {
 
 		if (IsKeyReleased(key_now)) {
 			key.changed_keys[note] = 0;
-			k08midi_synth_note(channel, note, 127);
+			k08midi_synth_note(channel, note, 0);
 		}
 	}
 	state_update(state, &key, elapsed_seconds);
