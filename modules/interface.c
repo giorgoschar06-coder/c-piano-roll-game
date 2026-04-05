@@ -53,6 +53,25 @@ void interface_draw_frame(State state) {
 		
 	List notes_falling = state_displayed_notes(state, time_window); // Λίστα με τις νότες που θα εμφανιστούν μέχρι το time_window
 
+	int note_base = 60;
+
+	if (list_size(notes_falling) > 60) {
+		int min = 127;
+
+		for (ListNode node = list_first(notes_falling);
+			 node != LIST_EOF;
+			 node = list_next(notes_falling, node)) {
+				MidiEvent event = list_node_value(notes_falling, node);
+
+				if ((int)event->key < min) {
+					min = event->key;
+				}
+			 }
+		if (min < 127) {
+			note_base = (min / 12) * 12;
+		}
+	}
+
 	for (ListNode node = list_first(notes_falling);
 		 node != LIST_EOF;
 		 node = list_next(notes_falling, node)) {
@@ -143,10 +162,42 @@ void interface_draw_frame(State state) {
 
 	DrawRectangle(0 ,0, GetScreenWidth(), 150, DARKGRAY); // Για να κρύψω τις νότες έτσι ώστε να μην φαίνοντε πριν να αρχίσει το παιχνίδι
 
+	typedef struct {
+		char* letter;
+		int pos;
+	}letters_on_keys;
+
+	letters_on_keys letters[] = {
+		{"A", 0}, {"W", 1}, {"S", 2},
+		{"E", 3}, {"D", 4}, {"F", 5},
+		{"T", 6}, {"G", 7}, {"Y", 8},
+		{"H", 9}, {"U", 10}, {"J", 11},
+		{"K", 12}, {"O", 13}, {"L", 14},
+		{"P", 15}, {";", 16}, {"'", 17},
+		{"]", 18}, {"\\", 19}
+	};
+
+	int num_keys = sizeof(letters) / sizeof(letters[0]);
+	int letters_size = 10;
+
+	for (int k = 0 ; k < num_keys ; k++) {
+		int key_note = note_base + letters[k].pos;
+
+		int x = key_note * SCREEN_WIDTH / piano_keys;
+		int x_next = (key_note + 1) * SCREEN_WIDTH / piano_keys;
+		int key_width = x_next - x;
+
+		int text_size = MeasureText(letters[k].letter, letters_size);
+		int x_final = x + (key_width / 2) - (text_size / 2);
+
+		int y = piano_keys_start_y + piano_keys_height - 15;
+		DrawText(letters[k].letter, x_final, y, letters_size, BLACK);
+	}
+	
 	// Σχεδιάζουμε το σκορ και το FPS counter
 	DrawText(TextFormat("Time: %.2f", info->time), 20, 20, 40, GOLD);
 	DrawText(TextFormat("Score: %.2f", info->score), 320, 20, 40, GOLD);
-	DrawText(TextFormat("Accuracy: %.2f", info->accuracy), 720, 20, 40, GOLD);
+	DrawText(TextFormat("Accuracy: %.2f", info->accuracy), 670, 20, 40, GOLD);
 	DrawText(TextFormat("Level: %d", info->level), 1020, 20, 40, GOLD);
 	DrawFPS(SCREEN_WIDTH - 80, 0);
 
