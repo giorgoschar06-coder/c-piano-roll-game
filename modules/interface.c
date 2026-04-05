@@ -55,7 +55,7 @@ void interface_draw_frame(State state) {
 
 	int note_base = 60;
 
-	if (list_size(notes_falling) > 60) {
+	if (list_size(notes_falling) > 0) {
 		int min = 127;
 
 		for (ListNode node = list_first(notes_falling);
@@ -197,7 +197,7 @@ void interface_draw_frame(State state) {
 	// Σχεδιάζουμε το σκορ και το FPS counter
 	DrawText(TextFormat("Time: %.2f", info->time), 20, 20, 40, GOLD);
 	DrawText(TextFormat("Score: %.2f", info->score), 320, 20, 40, GOLD);
-	DrawText(TextFormat("Accuracy: %.2f", info->accuracy), 670, 20, 40, GOLD);
+	DrawText(TextFormat("Accuracy: %.2f", info->accuracy), 650, 20, 40, GOLD);
 	DrawText(TextFormat("Level: %d", info->level), 1020, 20, 40, GOLD);
 	DrawFPS(SCREEN_WIDTH - 80, 0);
 
