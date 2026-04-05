@@ -204,7 +204,7 @@ void interface_draw_frame(State state) {
 	// Αν το παιχνίδι έχει τελειώσει, σχεδιάζουμε το μήνυμα για να ξαναρχίσει
 	if (info->game_over == true) {
 		DrawText(
-			"GAME OVER \n PRESS [R] TO PLAY AGAIN",
+			"      GAME OVER \nPRESS [R] TO PLAY AGAIN",
 			 GetScreenWidth() / 2 - MeasureText("GAME OVER \n PRESS [ENTER] TO PLAY AGAIN", 20) / 2,
 			 GetScreenHeight() / 2 - 50, 20, RED
 		);

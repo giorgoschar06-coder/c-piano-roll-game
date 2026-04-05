@@ -11,9 +11,11 @@ LDFLAGS = -lm
 
 # Αρχεία .o
 OBJS = game.o ../../modules/state.o ../../modules/interface.o $(LIB)/k08.a $(LIB)/k08midi.a $(LIB)/libraylib.a
+OBJS_alt = game_alt.o ../../modules/state_alt.o ../../modules/interface.o $(LIB)/k08.a $(LIB)/k08midi.a $(LIB)/libraylib.a
 
 # Το εκτελέσιμο πρόγραμμα
 EXEC = game
+EXEC_alt = game_alt
 
 # Παράμετροι για δοκιμαστική εκτέλεση
 ARGS =
@@ -22,8 +24,15 @@ ARGS =
 include $(LIB)/libraylib.mk
 
 
+all: $(EXEC)
+
 $(EXEC): $(OBJS)
 	$(CC) $(OBJS) -o $(EXEC) $(LDFLAGS)
+
+all_alt: $(EXEC_alt)
+
+$(EXEC_alt): $(OBJS_alt)
+	$(CC) $(OBJS_alt) -o $(EXEC_alt) $(LDFLAGS)
 
 # Για να φτιάξουμε τα k08.a/libraylib.a τρέχουμε το make στο lib directory.
 $(LIB)/%.a:
@@ -34,6 +43,9 @@ clean:
 
 run: $(EXEC)
 	./$(EXEC) $(ARGS)
+
+run_alt: $(EXEC_alt)
+	./$(EXEC_alt) $(ARGS)
 
 valgrind: $(EXEC)
 	valgrind --error-exitcode=1 --leak-check=full --show-leak-kinds=all ./$(EXEC) $(ARGS)
