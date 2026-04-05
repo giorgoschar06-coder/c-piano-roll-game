@@ -214,11 +214,11 @@ void interface_draw_frame(State state) {
 		DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.08f));
 
 		int x_center = GetScreenWidth() / 3;
-		int y_center = GetScreenHeight() / 2;
+		int y_center = GetScreenHeight() / 3;
 
-		DrawText("PRESS [SPACE] TO PLAY / PAUSE GAME", x_center, y_center - 20, 20, GOLD);
-		DrawText("PRESS [N] TO MOVE TO THE NEXT FRAME", x_center, y_center + 20, 20, GOLD);
-		DrawText("PRESS [R] TO RESTART GAME", x_center, y_center + 40, 20, GOLD);
+		DrawText("PRESS [SPACE] TO PLAY / PAUSE GAME", x_center, y_center, 40, GOLD);
+		DrawText("PRESS [N] TO MOVE TO THE NEXT FRAME", x_center, y_center + 30, 40, GOLD);
+		DrawText("PRESS [R] TO RESTART GAME", x_center, y_center + 60, 40, GOLD);
 
 	}
 	EndDrawing();
