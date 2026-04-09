@@ -3,6 +3,7 @@
 #include "state.h"
 #include "interface.h"
 
+// Μεγάλη επιρροή από /programs/game_example/interface.c
 void interface_init() {
 	// Αρχικοποίηση του παραθύρου
 	InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "game");
@@ -23,28 +24,35 @@ void interface_draw_frame(State state) {
 	// Καθαρισμός, θα τα σχεδιάσουμε όλα από την αρχή
 	ClearBackground(DARKGRAY);
 
-	StateInfo info = state_info(state); // Παίτνω το info του παιχνιδιού
+	// Παίρνω το info του παιχνιδιού για να μπορώ αργότερα να το προβάλω στον χρήστη
+	StateInfo info = state_info(state); 
 
-    int piano_keys = 128;
-    int piano_keys_height = 150;
+    int piano_keys = 128; // Αριθμός συνολικών πλήκτρων
+    int piano_keys_height = 150; // Custom μέγεθος πλήκτρου
 
-    int piano_keys_start_y = SCREEN_HEIGHT - piano_keys_height;
+    int piano_keys_start_y = SCREEN_HEIGHT - piano_keys_height; // Ύψος από το οποίο θα ξεκινάνε τα πλήκτρα
 
-    for (int k = 0 ; k < piano_keys ; k++) {
+    for (int k = 0 ; k < piano_keys ; k++) { // αναδρομή όλων των πλήκτρων του πιάνου για να τα σχεδιάσω
 
-        int x = k * SCREEN_WIDTH / piano_keys;
-        int piano_keys_next_x = (k + 1) * SCREEN_WIDTH / piano_keys;
-        int piano_keys_width = piano_keys_next_x - x;
+		// Χωρίζω το πλάτος της οθόνης σε 128 μέρη για να χωρέσω όλα τα πλήκρα του πιάνου 
+        int x = k * SCREEN_WIDTH / piano_keys; // Θέση που θα αρχίζει το κάθε πλήκτρο
+        int piano_keys_next_x = (k + 1) * SCREEN_WIDTH / piano_keys; // Θέση που θα τελειώνει κάθε πλήτρο και θα αρχίζει το επόμενο
+        int piano_keys_width = piano_keys_next_x - x; // Πλάτος των πλήκτρων
 		
+		// Αφού έχω όλα τα στοιχεία και τις συντεταγμένες, σχεδιάζω ένα ένα τα 128 πλήκτρα
 		DrawRectangle(x, piano_keys_start_y, piano_keys_width, piano_keys_height, RAYWHITE);
 		
+		// Σχεδιασμός μαύρου περιγράμματος του κάθε πλήκτρου για να ξεχωρίζουν μεταξύ τους
 		DrawRectangleLines(x, piano_keys_start_y, piano_keys_width, piano_keys_height, BLACK);
 		
-		int key_major = k % 12;
+		int key_major = k % 12; // Μεταβλητή για να ξεχωρίζω πότε μια νότα είναι δίαιση με βάση το υπόλιπο κάθε οκτάβας (12 νότες)
 	 
+		// Εαν το πλήκτρο ανά οκτάβα έχει υπόλοιπο 1, 3, 6, 8 ή 10, τότε η νότα είναι δίαιση
 		if (key_major == 1 || key_major == 3 || key_major == 6 || key_major == 8 || key_major == 10) {
+		// Εαν η νότα είναι δίαιση, σχεδιάζω το μισό πάνω μέρος της νότας μαύρο για να το ξεχωρίσει ο χρήστης, όπως είναι περίπου και σε ένα κανονικό πιάνο
 		DrawRectangle(x, piano_keys_start_y, piano_keys_width, piano_keys_height - 75, BLACK);
 	
+		// Περίγραμα για λόγους οπτικής ομορφίας
 		DrawRectangleLines(x, piano_keys_start_y, piano_keys_width, piano_keys_height - 75, BLACK);
 		}
 	}
@@ -52,109 +60,104 @@ void interface_draw_frame(State state) {
 	double time_window = 5.0; // Χρόνος που έχουν οι νότες να εμφανιστούν στον χρήστη μέχρι να πέσουν στο πιάνο
 		
 	List notes_falling = state_displayed_notes(state, time_window); // Λίστα με τις νότες που θα εμφανιστούν μέχρι το time_window
+	
+	// Σε αυτό το σημείο βρίσκω από πιο σημείο θα σχεδιάσω τα γράμματα των πλήκτρων που θα φαίνονται στον χρήστη
+	int note_base = 60; // Κεντρική νότα Ντο του πιάνου σε μεσαία οκτάβα την οποία χρησιμοποιώ σαν βάση
 
-	int note_base = 60;
-
+	// Εαν μέχρι τα επόμενα 5.0 δευτερόλεπτα θα παιχτούν νότες
 	if (list_size(notes_falling) > 0) {
-		int min = 127;
+		// Μεταβλητή που θα χρησιμοποιήσω για να εντοπίσω το σημείο που θα εμφανίσω τα γράματα στα πλήκτρα
+		int min = 127; // Την αρχικοποιώ με 127 που είναι η ψηλότερη νότα του πιάνου
 
+		// Πλήρης διάσχηση των νοτών που θα παιχτούν τα επόμενα 5sec για να βρώ από πιο σημείο θα ξεκινήσω να ζωγραφίζω τις νότες
 		for (ListNode node = list_first(notes_falling);
 			 node != LIST_EOF;
 			 node = list_next(notes_falling, node)) {
 				MidiEvent event = list_node_value(notes_falling, node);
 
 				if ((int)event->key < min) {
-					min = event->key;
+					min = event->key; // Από όλες τις νότες της λίστας βρίσκω την χαμηλότερη
 				}
 			 }
-		if (min < 127) {
-			note_base = (min / 12) * 12;
+		if (min < 127) { // Εαν εντόπισα έστω και μια νότα
+			note_base = (min / 12) * 12; // Βρίσκω την οκτάβα στο πιάνο που καλύπτει και την χαμηλότερη νότα της λίστας
 		}
 	}
 
+	// Ξανά πλήρης διάσχηση της λίστας για να σχεδιάσω τις νότες που θα παίφτουν τα επόμενα 5sec
 	for (ListNode node = list_first(notes_falling);
 		 node != LIST_EOF;
 		 node = list_next(notes_falling, node)) {
 
 			MidiEvent note = list_node_value(notes_falling, node);
 
-			if (note->velocity == 0) {
+			if (note->velocity == 0) { // Εαν η νότα δεν έχει ήχο την κάνουμε skip
 				continue;
 			}
 
-			double time_diff = note->time - info->time;
+			double time_diff = note->time - info->time; // Διαφορά χρόνου μεταξύ του χρόνου της νότας και του χρόνου που βρίσκετε το κομμάτι 
 			
-			if (time_diff < -0.2) { // Για να μην ξαναεμφανιστεί η νότα όταν μπει στο loop 
+			if (time_diff < -0.2) { // Για να μην ξαναεμφανιστεί η νότα όταν μπει στο loop την κάνω skip
 				continue;
 			}
 
-			int note_key = note->key;
-			int x = note_key * SCREEN_WIDTH / piano_keys;
-			int note_width = (note_key + 1) * SCREEN_WIDTH / piano_keys - x;
+			int note_key = note->key; // Το πλήκτρο της νότας στο πιάνο
+			int x = note_key * SCREEN_WIDTH / piano_keys; // Η θέση στον άξονα x που θα πέφτει η νότα πρέπει να έχει ακριβός την ίδια θέση με το πλήκτρο της νότας
+			int note_width = (note_key + 1) * SCREEN_WIDTH / piano_keys - x; // Τα πάχος της νότας πρέπει να είναι όσο και το πάχος του πλήκτρου της
 
-			int y = piano_keys_start_y - (int)((time_diff / time_window) * piano_keys_start_y);
+			// Η θέση y που όσο προχωρά ο χρόνος, η θέση θα μειώνετε δηλαδή η νότα θα πέφτει μέχρι να ακουμπήσει το πλήκτρο της
+			int y = piano_keys_start_y - (int)((time_diff / time_window) * piano_keys_start_y); 
 
-			int channel = (int)note->channel;
+			int channel = (int)note->channel; // Το channel στο οποίο βρίσκετε η νότα
 
+			// Ανάλογα με το channel που βρίσκετε το κομμάτι, οι νότες έχουν διαφορετικό χρώμα για να γνωρίζει ο χρήστης πότε αλλάζει το όργανο
 			switch (channel) {
 				case 0:
-				DrawRectangle(x, y - 30, note_width, 30, BEIGE);
-				//DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
-				break;
+				DrawRectangle(x, y - 30, note_width, 30, BEIGE); // Σχεδιασμός νότας με βάση τα στοιχεία και τις συντεταγμένες που υπολόγισα πιο πάνω
+				break;											 // Το 30 δεξιά του χρώματος είναι το μάκρος της νότας το οποίο είναι σταθερό αφού δεν έχω το duration της κάθε νότας
 
 				case 1:
 				DrawRectangle(x, y - 30, note_width, 30, YELLOW);
-				//DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
 				break;
 
 				case 2:
 				DrawRectangle(x, y - 30, note_width, 30, RED);
-				//DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
 				break;
 
 				case 3:
 				DrawRectangle(x, y - 30, note_width, 30, ORANGE);
-				//DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
 				break;
 
 				case 4:
 				DrawRectangle(x, y - 30, note_width, 30, GREEN);
-				//DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
 				break;
 
 				case 5:
 				DrawRectangle(x, y - 30, note_width, 30, BLUE);
-				//DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
 				break;
 
 				case 6:
 				DrawRectangle(x, y - 30, note_width, 30, VIOLET);
-				//DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
 				break;
 
 				case 7:
 				DrawRectangle(x, y - 30, note_width, 30, SKYBLUE);
-				//DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
 				break;
 
 				case 8:
 				DrawRectangle(x, y - 30, note_width, 30, PINK);
-				//DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
 				break;
 
 				case 9:
 				DrawRectangle(x, y - 30, note_width, 30, MAROON);
-				//DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
 				break;
 
 				case 10:
 				DrawRectangle(x, y - 30, note_width, 30, BROWN);
-				//DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
 				break;
 
 				default:
 				DrawRectangle(x, y - 30, note_width, 30, LIME);
-				//DrawRectangleLines(x, y - 30, note_width, 30, BLACK);
 				break;
 			}
 
@@ -162,12 +165,14 @@ void interface_draw_frame(State state) {
 
 	DrawRectangle(0 ,0, GetScreenWidth(), 150, DARKGRAY); // Για να κρύψω τις νότες έτσι ώστε να μην φαίνοντε πριν να αρχίσει το παιχνίδι
 
+	// Struct με περιεχόμενο τα στοιχεία των γραμμάτων
 	typedef struct {
-		char* letter;
-		int pos;
+		char* letter; // χαρακτήρας
+		int pos; // θέση πλήκτρου στο πιάνο
 	}letters_on_keys;
 
-	letters_on_keys letters[] = {
+	// Πίνακας που περιέχει τους χαρακτήρες και των 19 πλήκτρων που θα είναι συνεχώς έτοιμα να αναπαράξουν ήχο
+	letters_on_keys letters[] = { 
 		{"A", 0}, {"W", 1}, {"S", 2},
 		{"E", 3}, {"D", 4}, {"F", 5},
 		{"T", 6}, {"G", 7}, {"Y", 8},
@@ -177,24 +182,27 @@ void interface_draw_frame(State state) {
 		{"]", 18}, {"\\", 19}
 	};
 
-	int num_keys = sizeof(letters) / sizeof(letters[0]);
-	int letters_size = 10;
+	// Σε αυτό το σημείο σχεδιάζω τα γράμματα των πλήκτρων που πρέπει να πατήσει ο χρήστης για να παίξει ένα πλήκτρο του πιάνο,
+	// τα οποία γράμματα μετακινούνται με βάση την περιοχή που θα παιχτούν οι νότες, με βάση το original τραγούδι
+
+	int num_keys = sizeof(letters) / sizeof(letters[0]); // Αριθμός των πλήκτρων
+	int letters_size = 10; // Μέγεθος των γραμμάτων το οποίο πρέπει να είναι μικρό για να χωρέσουν μέσα στα πλήκτρα
 
 	for (int k = 0 ; k < num_keys ; k++) {
-		int key_note = note_base + letters[k].pos;
+		int key_note = note_base + letters[k].pos; // Εντοπίζω την νότα που αντιστηχεί κάθε πλήκτρο στην οκτάβα που βρίσκομαι
 
-		int x = key_note * SCREEN_WIDTH / piano_keys;
-		int x_next = (key_note + 1) * SCREEN_WIDTH / piano_keys;
-		int key_width = x_next - x;
+		int x = key_note * SCREEN_WIDTH / piano_keys; // Θέση x που θα ζωγραφιστεί το γράμμα η οποία πρέπει να σημβαδίζει με την θέση του πλήκτρου
+		int x_next = (key_note + 1) * SCREEN_WIDTH / piano_keys; // Θέση που θα τελειώνει κάθε γράμμα με βάση το πλήτρο και θα αρχίζει το επόμενο
+		int key_width = x_next - x; // Μεταξύ απόσταση των δύο πλήκτρων για το πάχος του πλήκτρου
 
-		int text_size = MeasureText(letters[k].letter, letters_size);
-		int x_final = x + (key_width / 2) - (text_size / 2);
+		int text_size = MeasureText(letters[k].letter, letters_size); // Μέγεθος χαρακτήρων με την χρήση MeasureText
+		int x_final = x + (key_width / 2) - (text_size / 2); // Τελική θέση x για το γράμμα έτσι ώστε να μπει ακριβός στο κέντρο του πλήκτρου για να φένετε καθαρά
 
-		int y = piano_keys_start_y + piano_keys_height - 15;
-		DrawText(letters[k].letter, x_final, y, letters_size, BLACK);
+		int y = piano_keys_start_y + piano_keys_height - 15; // Όλα τα γράμματα θα τοποθετηθούν στο ίδιο ύψος
+		DrawText(letters[k].letter, x_final, y, letters_size, BLACK); // Σχεδιασμός γραμμάτων με βάση τις συντεταγμένες και τις πληροφορίες που υπολόγισα πιο πάνω
 	}
 	
-	// Σχεδιάζουμε το σκορ και το FPS counter
+	// Σχεδιάζουμε το σκορ και το FPS counter, τον χρόνο, το accuracy και το level, στο πάνω μέρος της οθόνης που θα είναι συνέχεια ορατό
 	DrawText(TextFormat("Time: %.2f", info->time), 20, 20, 40, GOLD);
 	DrawText(TextFormat("Score: %.2f", info->score), 320, 20, 40, GOLD);
 	DrawText(TextFormat("Accuracy: %.2f", info->accuracy), 650, 20, 40, GOLD);
@@ -210,6 +218,8 @@ void interface_draw_frame(State state) {
 		);
 	}
 
+	// Στην αρχή του παινιδιού και κάθε φορά που ο χρήστης κάνει pause το παιχνίδι, εμφανίζονται οι αρχικές επιλογές με τις οδηγίες
+	// χρήσης του παιχνιδιού, δηλαδή πως κάνουμε pause, πως restart και πως προχωράμε frame
 	if (info->paused == true) {
 		DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.08f));
 

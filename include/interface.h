@@ -1,3 +1,4 @@
+// Copy Paste του /programs/game_example/interface.h
 #pragma once
 
 #include "state.h"
