@@ -95,16 +95,16 @@ void update_and_draw() {
 		int note = keys_to_notes[k][1] + note_base;
 
 		if (IsKeyDown(key_now)) {
-			key.active_keys[note] = 127;
+			key.active_keys[note] = 1;
 		}
 
 		if (IsKeyPressed(key_now)) {
-			key.changed_keys[note] = 127;
+			key.changed_keys[note] = 1;
 			k08midi_synth_note(channel, note, 127);
 		}
 
 		if (IsKeyReleased(key_now)) {
-			key.changed_keys[note] = 0;
+			key.changed_keys[note] = 1;
 			k08midi_synth_note(channel, note, 0);
 		}
 	}
