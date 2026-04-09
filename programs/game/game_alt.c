@@ -86,6 +86,8 @@ void update_and_draw() {
 		}
 	}
 
+	list_destroy(list);
+
 	int channel = state_playing_channel(state);
 
 	for (int k = 0 ; k < num_keys ; k++) {
@@ -124,7 +126,7 @@ void update_and_draw() {
 	if (IsKeyPressed(KEY_R) || (IsKeyPressed(KEY_ENTER) && info->game_over == true)) {
             k08midi_synth_note_off_all();
 			state_destroy(state);
-			state_create("./assets/back-to-black.mid");
+			state = state_create("./assets/back-to-black.mid");
 			GetFrameTime();
         }
 
