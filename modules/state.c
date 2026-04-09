@@ -640,21 +640,37 @@ List state_playback_events(State state, double since) {
 
 	List playback_events = list_create(NULL); // Δημιουργία λίστας για να μπουν τα events ταξινομημένα 
 
-	List list = state->midi_file->events; // Δημιουργία λίστας με όλα τα events του τραγουδιού
+	List original_song = state->midi_file->events; // Δημιουργία λίστας με όλα τα events του τραγουδιού
 
-	for (ListNode node = list_first(list); // Διάσχηση όλων των events της λίστας για να κρατήσω αυτά που συμβαδίζουν με τα χρονικά μου πλαίσια
+	for (ListNode node = list_first(original_song); // Διάσχηση όλων των events της λίστας για να κρατήσω αυτά που συμβαδίζουν με τα χρονικά μου πλαίσια
 		 node != LIST_EOF;
-		 node = list_next(list, node)) {
+		 node = list_next(original_song, node)) {
 
-			MidiEvent event = list_node_value(list, node);
+			MidiEvent event = list_node_value(original_song, node);
 
 			// Εαν το event είναι μεταξύ του χρόνου since και του χρόνου τώρα, το εισάγω στην λίστα σε μη φθίνουσα σειρά με βάση τον χρόνο
 			if (event->time >= time_since && event->time <= time_now) {
-				list_insert_next(playback_events, list_last(playback_events), event);
+				if (event->channel != channel_playing_now) { // Για να κάνουμε mute τις νότες του original κομματιού
+					list_insert_next(playback_events, list_last(playback_events), event);
+				}
 			}
 			else if (event->time > time_now) { // Εαν ο χρόνος βγει εκτός ορίων, τερματίζω την διάσχηση
 				break;
 			}
+		 }
+
+	List recorded_song = state->midi_events; // Δημιουργία λίστας με όλα τα ηχογραφημένα events του τραγουδιού
+
+	for (ListNode node = list_first(recorded_song); // Διάσχηση όλων των events της λίστας για να κρατήσω αυτά που συμβαδίζουν με τα χρονικά μου πλαίσια
+		 node != LIST_EOF;
+		 node = list_next(recorded_song, node)) {
+
+			MidiEvent event = list_node_value(recorded_song, node);
+
+			// Εαν το event είναι μεταξύ του χρόνου since και του χρόνου τώρα, το εισάγω στην λίστα σε μη φθίνουσα σειρά με βάση τον χρόνο
+			if (event->time >= time_since && event->time <= time_now) {
+					list_insert_next(playback_events, list_last(playback_events), event);
+				}
 		 }
 
 	return playback_events; // Επιστροφή ολοκληρομένης λίστας
@@ -701,7 +717,7 @@ void state_update(State state, KeyState ks, double elapsed_time) {
 					for (int k = 0 ; k < 128 ; k++) { // Πέρασμα από όλα τις νότε - πλήκτρα του πιάνου
 						 // Έλεγχος εαν τα πλήκτρα έχουν πατηθεί, για να δημιουργήσω τα δικά μου keys με βάση αυτές τις νότες έτσι ώστε να τις προσθέσω στο τέλος του clip->recorded
 						 // Με λίγα λόγια γίνετε η ηχογράφηση των νοτών του κομματιού για το συγκεκριμένο clip
-						if (ks->changed_keys[k] >= 0) {
+						if (ks->changed_keys[k] > 0) {
 							MidiEvent key_pressed = malloc(sizeof(struct midi_event));
 
 							key_pressed->type = MIDI_NOTE;
