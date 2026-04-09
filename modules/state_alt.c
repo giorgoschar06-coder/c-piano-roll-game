@@ -177,6 +177,25 @@ static void append_all_backround_events(State state) {
 								event_in_clip = true;
 								break;
 							}
+					
+					for (ListNode node_play = list_first(clip_now->plays);
+						 node_play != LIST_EOF;
+						 node_play = list_next(clip_now->plays, node_play)) {
+							
+							ClipPlay play_now = list_node_value(clip_now->plays, node_play);
+							
+							if (event->channel == clip_now->channel &&
+								event->time >= play_now->start &&
+								event->time <= (play_now->start + play_now->duration)) {
+							
+									event_in_clip = true;
+									break;
+								}
+						 }
+
+					if (event_in_clip == true) {
+						break;
+					}
 					}
 
 					if (!event_in_clip) {
@@ -798,6 +817,7 @@ void state_update(State state, KeyState ks, double elapsed_time) {
 						if (ks->changed_keys[k] == true) {
 							MidiEvent key_pressed = malloc(sizeof(struct midi_event));
 
+							key_pressed->type = MIDI_NOTE;
 							key_pressed->time = state->info.time;
 							key_pressed->channel = channel_playing_now;
 							key_pressed->key = k; // Η θέση του k αντιπροσωπεύει την νότα (0-127) που έχει παιχτεί
@@ -816,6 +836,7 @@ void state_update(State state, KeyState ks, double elapsed_time) {
 						if (ks->active_keys[k] > 0) { // Έλεγχος εαν έχουν παιχτεί κατά την διάρκει του recording
 							MidiEvent key_mute = malloc(sizeof(struct midi_event));
 
+							key_mute->type = MIDI_NOTE;
 							key_mute->time = state->info.time;
 							key_mute->channel = channel_playing_now;
 							key_mute->key = k;
@@ -856,6 +877,7 @@ void state_update(State state, KeyState ks, double elapsed_time) {
 										MidiEvent new_event = malloc(sizeof(struct midi_event));
 										
 										// Δημιουργώ ένα νέο event τύπου αντίγραφου με τον νέο χρόνο του και με τα ίδια του υπόλοιπα στοιχεία
+										new_event->type = event_now->type;
 										new_event->time = new_event_duration;
 										new_event->channel = event_now->channel;
 										new_event->key = event_now->key;
