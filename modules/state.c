@@ -650,7 +650,7 @@ List state_playback_events(State state, double since) {
 
 			// Εαν το event είναι μεταξύ του χρόνου since και του χρόνου τώρα, το εισάγω στην λίστα σε μη φθίνουσα σειρά με βάση τον χρόνο
 			if (event->time >= time_since && event->time <= time_now) {
-				if (event->channel != channel_playing_now) { // Για να κάνουμε mute τις νότες του original κομματιού
+				if (event->channel != state_playing_channel(state)) { // Για να κάνουμε mute τις νότες του original κομματιού
 					list_insert_next(playback_events, list_last(playback_events), event);
 				}
 			}
