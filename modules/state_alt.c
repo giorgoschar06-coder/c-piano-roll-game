@@ -716,11 +716,11 @@ List state_playback_events(State state, double since) {
 
     // Ένα custom event που θα το χρησιμοποιήσω για να ξέρω από που θα αρχίσω στο set με όλα τα events (time_since).
     // Με αυτό τον τρόπο δεν χρειάζετε να διατρέχω την λίστα κάθε φορά από την αρχή για αυτό και το πρόγραμμα έτσι γίνετε πιο αποδοτικό σε μεγάλα κομμάτια
-    MidiEvent temp = malloc(sizeof(struct midi_event)); 
+    MidiEvent temp = calloc(1, sizeof(struct midi_event)); // Calloc για να γίνουν όλα τα στοιχεία αυτόματα 0
     temp->time = time_since;
-    temp->channel = -1;
-    temp->key = -1;
-    temp->velocity = -1;
+    temp->channel = 0;
+    temp->key = 0;
+    temp->velocity = 0;
 
     // To εισάγω προσωρινά στο set για να πάει και να τοποθετηθεί ακριβός στο σημείο που πρέπει με βάση το time_now (ένα node πριν από αυτό που ψάχνω)
     set_insert(set, temp);
@@ -795,7 +795,7 @@ void state_update(State state, KeyState ks, double elapsed_time) {
 					for (int k = 0 ; k < 128 ; k++) { // Πέρασμα από όλα τις νότε - πλήκτρα του πιάνου
 						 // Έλεγχος εαν τα πλήκτρα έχουν πατηθεί, για να δημιουργήσω τα δικά μου keys με βάση αυτές τις νότες έτσι ώστε να τις προσθέσω στο τέλος του clip->recorded
 						 // Με λίγα λόγια γίνετε η ηχογράφηση των νοτών του κομματιού για το συγκεκριμένο clip
-						if (ks->changed_keys[k] >= 0) {
+						if (ks->changed_keys[k] == true) {
 							MidiEvent key_pressed = malloc(sizeof(struct midi_event));
 
 							key_pressed->time = state->info.time;
