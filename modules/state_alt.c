@@ -53,6 +53,8 @@ int compare(Pointer event1, Pointer event2) {
     MidiEvent first_event = (MidiEvent)event1;
     MidiEvent second_event = (MidiEvent)event2;
 
+	// Συγκρίνω τις νότες ως προς κάθε του στοιχείο από τον χρόνο που ενεργοποιούνται μέχρι τις διευθύνσεις μνήμης
+	// τους για να τις τοποθετήσω στο κατάλληλω σημείο μέσα στο set
     if (first_event->time > second_event->time) {
         return 1;
     }
@@ -84,7 +86,16 @@ int compare(Pointer event1, Pointer event2) {
                     return -1;
                 }
                 else {
-                    return 0;
+                    // Τελευτέο μέτρο σύγκρισης είναι οι διευτύνσεις μνήμης για να μην ακούγονται οι νότες buggaρισμένες
+					if (first_event > second_event) {
+                		return 1;
+            		}
+            		else if (first_event < second_event) {
+            		    return -1;
+            		}
+            		else {
+            		    return 0;
+            		}
                 }
             }
         }
@@ -142,6 +153,39 @@ static void append_song_control_events(State state) {
 			set_insert(state->midi_events, clone); // Απαραίτητη αλλαγή αφού πέρνω πλεον τα events μου και τα βάζω σε Set αντί για Λίστα
 		}
 	}
+}
+
+// Βοηθητική συνάρτηση παρόμοια με την append_song_control_events η οποία είναι απαραίτητη για να περάστούν και τα MIDI_NOTES μέσα στα midi_events του τραγουδιού
+// μιας και η append_song_control_events τα κάνει skip με αποτέλεσμα να μην παίζουν οι νότες στο backround του παιχνιδιού
+static void append_all_backround_events(State state) {
+
+		for (ListNode node = list_first(state->midi_file->events);
+		     node != LIST_EOF; 
+			 node = list_next(state->midi_file->events, node)) {
+
+				MidiEvent event = list_node_value(state->midi_file->events, node);
+
+				if (event->type == MIDI_NOTE) {
+					bool event_in_clip = false;
+				
+					for (int k = 0 ; k < vector_size(state->clips) ; k++) {
+						Clip clip_now = vector_get_at(state->clips, k);
+						if (event->channel == clip_now->channel &&
+							event->time >= clip_now->start &&
+							event->time <= (clip_now->start + clip_now->duration)) {
+							
+								event_in_clip = true;
+								break;
+							}
+					}
+
+					if (!event_in_clip) {
+						MidiEvent clone = malloc(sizeof(*clone));
+						*clone = *event;
+						set_insert(state->midi_events, clone);
+					}
+			    }
+			}
 }
 
 // Δημιουργεί clips και clip_plays με βάση τα markers του αρχείου MIDI
@@ -539,7 +583,8 @@ State state_create(String midi_file) {
 	state->recording_index = 0;
 
 	state->midi_events = set_create(compare, free); // Εδώ που θα τοπεθετηθούν τα MIDI events προς αναπαραφωφή αλλά τώρα σε μορφή Set
-	append_song_control_events(state);
+	append_song_control_events(state); // Μπαίνουν όλα τα events στα clips εχτός των MIDI_NOTES
+	append_all_backround_events(state); // Μπαίνουν και τα MIDI_NOTES μέσα στα clips
 
 	return state;
 }
