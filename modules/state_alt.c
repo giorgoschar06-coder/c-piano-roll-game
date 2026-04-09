@@ -177,25 +177,6 @@ static void append_all_backround_events(State state) {
 								event_in_clip = true;
 								break;
 							}
-					
-					//for (ListNode node_play = list_first(clip_now->plays);
-					//	 node_play != LIST_EOF;
-					//	 node_play = list_next(clip_now->plays, node_play)) {
-					//		
-					//		ClipPlay play_now = list_node_value(clip_now->plays, node_play);
-					//		
-					//		if (event->channel == clip_now->channel &&
-					//			event->time >= play_now->start &&
-					//			event->time <= (play_now->start + play_now->duration)) {
-					//		
-					//				event_in_clip = true;
-					//				break;
-					//			}
-					//	 }
-
-					//if (event_in_clip == true) {
-					//	break;
-					//}
 					}
 					if (!event_in_clip) {
 						MidiEvent clone = malloc(sizeof(*clone));
