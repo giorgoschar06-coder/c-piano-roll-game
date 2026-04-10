@@ -32,7 +32,6 @@ sdi2400999,my-github-username,Όνομα Επώνυμο
 							   * /modules/stace.c
 							   * /modules/state_alt.c
 							   * /programs/game/game.c
-							   * /programs/game/game_alt.c
 							   * /programs/game/Makefile
 
 ### Documentation

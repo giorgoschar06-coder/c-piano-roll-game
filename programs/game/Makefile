@@ -11,7 +11,8 @@ LDFLAGS = -lm
 
 # Αρχεία .o
 OBJS = game.o ../../modules/state.o ../../modules/interface.o $(LIB)/k08.a $(LIB)/k08midi.a $(LIB)/libraylib.a
-OBJS_alt = game_alt.o ../../modules/state_alt.o ../../modules/interface.o $(LIB)/k08.a $(LIB)/k08midi.a $(LIB)/libraylib.a
+# Για να τρέξει το εναλακτικό version του state
+OBJS_alt = game.o ../../modules/state_alt.o ../../modules/interface.o $(LIB)/k08.a $(LIB)/k08midi.a $(LIB)/libraylib.a
 
 # Το εκτελέσιμο πρόγραμμα
 EXEC = game
@@ -41,6 +42,9 @@ $(LIB)/%.a:
 clean:
 	rm -f $(OBJS) $(EXEC)
 
+clean_alt:
+	rm -f $(OBJS_alt) $(EXEC_alt)
+
 run: $(EXEC)
 	./$(EXEC) $(ARGS)
 
@@ -49,3 +53,6 @@ run_alt: $(EXEC_alt)
 
 valgrind: $(EXEC)
 	valgrind --error-exitcode=1 --leak-check=full --show-leak-kinds=all ./$(EXEC) $(ARGS)
+
+valgrind_alt: $(EXEC_alt)
+	valgrind --error-exitcode=1 --leak-check=full --show-leak-kinds=all ./$(EXEC_alt) $(ARGS)
