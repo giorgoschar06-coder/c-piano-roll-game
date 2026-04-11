@@ -704,7 +704,7 @@ void state_update(State state, KeyState ks, double elapsed_time) {
 							key_pressed->time = state->info.time;
 							key_pressed->channel = channel_playing_now;
 							key_pressed->key = k; // Η θέση του k αντιπροσωπεύει την νότα (0-127) που έχει παιχτεί
-							key_pressed->velocity = (uint8_t)ks->active_keys[k];
+							key_pressed->velocity = (uint8_t)ks->active_keys[k] ? 127 : 0; // Εαν η νότα είναι ενεργοποιημένη να παίξει στην μέγιστη ένταση αλιώς καθόλου
 
 							list_insert_next(clip->recorded, list_last(clip->recorded), key_pressed);
 						}

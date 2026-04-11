@@ -38,6 +38,9 @@ $(EXEC_alt): $(OBJS_alt)
 clean:
 	rm -f $(OBJS) $(EXEC)
 
+clean_alt:
+	rm -f $(OBJS_alt) $(EXEC_alt)
+
 run: $(EXEC)
 	./$(EXEC) $(ARGS)
 
