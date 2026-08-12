@@ -2,6 +2,22 @@
 
 ## 2026 Project 1
 
+---
+
+## Overview
+
+This repository contains a fully playable, interactive rhythm piano game developed in **C**. Inspired by classic falling-note games, it utilizes the **Raylib** library for 2D graphics and a custom software synthesizer to parse and play real `.mid` (MIDI) files.
+
+### Key Features
+* **Real-time Gameplay:** Renders falling notes, dynamic piano keys, and a live HUD (FPS, Score, Accuracy, Level).
+* **Audio Synthesis:** Captures user keyboard input and dispatches audio events in real-time alongside the background track.
+* **Algorithmic Scoring & Auto-correction:** Evaluates player timing accuracy and handles level progression.
+* **Optimized Performance:** Replaces standard lists with custom Set data structures for efficient, memory-leak-free handling of thousands of concurrent MIDI events.
+
+> *Note: The detailed technical documentation and assignment breakdown below are written in Greek, as this project was originally submitted for a university course.*
+
+---
+
 Εκφώνηση: https://k08.chatzi.org/projects/project1/
 
 
