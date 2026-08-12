@@ -2,8 +2,6 @@
 
 ## 2026 Project 1
 
----
-
 ## Overview
 
 This repository contains a fully playable, interactive rhythm piano game developed in **C**. Inspired by classic falling-note games, it utilizes the **Raylib** library for 2D graphics and a custom software synthesizer to parse and play real `.mid` (MIDI) files.
